@@ -17,15 +17,15 @@
 using namespace cv;
 
 inline uchar avg (Vec3b & vec) {
-    
+    return (vec.col(0) + vec.col(1) + vec.col(2)) / 3;
 }
 
 Mat * grayscale (Mat &frame) {
     int tp = frame.type();
-    Mat * result = new Mat(frame.size(), tp);
+    Mat * result = new Mat(frame.size(), CV_8UC1);
     for (int i=0; i < frame.size().height; i++) {
         for (int j = 0; j < frame.size().width; j++) {
-            result.at<uchar>(i, j) = frame.at<Vec3b>(i, j)
+            result.at<uchar>(i, j) = avg(frame.at<Vec3b>(i, j));
         }
     }
 }
