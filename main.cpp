@@ -14,6 +14,7 @@
 
 #include "opencv2/opencv.hpp"
 #include <iostream>
+#include <omp.h>
 
 using namespace cv;
 
@@ -41,6 +42,7 @@ inline uchar avg (Vec3b & vec) {
 }
 
 Mat* GrayscaleFilter (Mat &frame) {
+    
     Mat * result = new Mat(frame.size(), CV_8UC1);
     for (int i=0; i < frame.size().height; i++) {
         for (int j = 0; j < frame.size().width; j++) {
@@ -96,10 +98,12 @@ int main(int argc, char** argv) {
     int cnt = cap.get(CV_CAP_PROP_FRAME_COUNT);
     String nm = "grayscaleVid.avi";
     VideoWriter fil (nm, VideoWriter::fourcc('M','P','E','G'), 30, Size(1080, 1920), 0);
-    
+    #pragma omp parallel for num_threads(8) private(frame)
     for (int i = 0; i < cnt; i++) {
+        #pragma omp critical 
         cap >> frame;
         Mat * im = GrayscaleFilter(frame);
+        #pragma omp critical 
         fil << *im;
     }
 
