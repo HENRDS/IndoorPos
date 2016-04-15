@@ -16,8 +16,18 @@
 
 using namespace cv;
 
-Mat * grayscale (Mat &frame) {
+inline uchar avg (Vec3b & vec) {
     
+}
+
+Mat * grayscale (Mat &frame) {
+    int tp = frame.type();
+    Mat * result = new Mat(frame.size(), tp);
+    for (int i=0; i < frame.size().height; i++) {
+        for (int j = 0; j < frame.size().width; j++) {
+            result.at<uchar>(i, j) = frame.at<Vec3b>(i, j)
+        }
+    }
 }
 
 void process (Mat * frame) {
