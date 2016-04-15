@@ -40,13 +40,22 @@ inline uchar avg (Vec3b & vec) {
     return (vec(0) + vec(1) + vec(2)) / 3;
 }
 
-Mat * grayscale (Mat &frame) {
+Mat * GrayscaleFilter (Mat &frame) {
+    unsigned char *input = (unsigned char*)(frame.data);
     Mat * result = new Mat(frame.size(), CV_8UC1);
-    for (int i=0; i < frame.size().height; i++) {
-        for (int j = 0; j < frame.size().width; j++) {
-            result->at<uchar>(i, j) = avg(frame.at<Vec3b>(i, j));
+    unsigned char *out = (unsigned char*)(result->data);
+    for(int j = 0;j < frame.rows;j++){
+        for(int i = 0;i < frame.cols;i++){
+            out[result->step * j+i] = (input[frame.step * j + i ]  + input[frame.step * j + i + 1] + input[frame.step * j + i + 2])/ 3;
+            
         }
     }
+//    
+//    for (int i=0; i < frame.size().height; i++) {
+//        for (int j = 0; j < frame.size().width; j++) {
+//            result->at<uchar>(i, j) = avg(frame.at<Vec3b>(i, j));
+//        }
+//    }
     return result;
 }
 // Blur
@@ -57,7 +66,7 @@ void gaussian_blur(Mat * frame) {
 void box_blur() { }
 
 void process (Mat &frame) {
-    Mat * gray = grayscale(frame);
+    Mat * gray = GrayscaleFilter(frame);
     
 }
 /*
@@ -70,15 +79,21 @@ int main(int argc, char** argv) {
         return -1;
     
     Mat frame;
-    for (int i = 0; i < 10; i++) {
+    int cnt = cap.get(CV_CAP_PROP_FRAME_COUNT);
+    String nm = "grayscaleVid.avi";
+    VideoWriter fil (nm, VideoWriter::fourcc('M','P','E','G'), 30, Size(1080, 1920), 0);
+    
+    for (int i = 0; i < cnt; i++) {
         cap >> frame;
+        Mat * im = GrayscaleFilter(frame);
+        fil << *im;
     }
 
     
-    imwrite( "Image.jpg", frame);
-    Mat * im = grayscale(frame);
-    
-    imwrite( "Gray_Image.jpg", *im);
+//    imwrite( "Image.jpg", frame);
+//    Mat * im = grayscale(frame);
+//    
+//    imwrite( "Gray_Image.jpg", *im);
     
     return 0;
 }
