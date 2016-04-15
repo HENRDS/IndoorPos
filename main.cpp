@@ -40,7 +40,7 @@ inline uchar avg (Vec3b & vec) {
     return (vec(0) + vec(1) + vec(2)) / 3;
 }
 
-Mat * grayscale (Mat &frame) {
+Mat* GrayscaleFilter (Mat &frame) {
     Mat * result = new Mat(frame.size(), CV_8UC1);
     for (int i=0; i < frame.size().height; i++) {
         for (int j = 0; j < frame.size().width; j++) {
@@ -49,6 +49,29 @@ Mat * grayscale (Mat &frame) {
     }
     return result;
 }
+
+Mat* DifferenceFilter(Mat &reference_frame, Mat &frame) {
+    Mat * result = new Mat(frame.size(), CV_8UC1);
+    for (int i=0; i < frame.size().height; i++) {
+        for (int j=0; j < frame.size().width; j++) {
+            result->at<uchar>(i,j) = frame.at<uchar>(i,j) - reference_frame.at<uchar>(i,j);
+        }
+    }
+    return result;
+}
+
+Mat* ThresholdFilter(Mat &frame, uchar threshold) {
+    Mat * result = new Mat(frame.size(), CV_8UC1);
+    for (int i=0; i < frame.size().height; i++) {
+        for (int j=0; j < frame.size().width; j++) {
+            result->at<uchar>(i,j) = frame.at<uchar>(i,j) > threshold ? frame.at<uchar>(i,j) : (uchar)0;
+        }
+    }
+    return result;
+}
+
+
+
 // Blur
 void gaussian_blur(Mat * frame) {
     
@@ -57,7 +80,7 @@ void gaussian_blur(Mat * frame) {
 void box_blur() { }
 
 void process (Mat &frame) {
-    Mat * gray = grayscale(frame);
+    Mat * gray = GrayscaleFilter(frame);
     
 }
 /*
@@ -76,7 +99,7 @@ int main(int argc, char** argv) {
 
     
     imwrite( "Image.jpg", frame);
-    Mat * im = grayscale(frame);
+    Mat * im = GrayscaleFilter(frame);
     
     imwrite( "Gray_Image.jpg", *im);
     
