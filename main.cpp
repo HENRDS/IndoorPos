@@ -14,7 +14,6 @@
 
 #include "opencv2/opencv.hpp"
 #include <iostream>
-#include <omp.h>
 
 using namespace cv;
 
@@ -98,12 +97,9 @@ int main(int argc, char** argv) {
     int cnt = cap.get(CV_CAP_PROP_FRAME_COUNT);
     String nm = "grayscaleVid.avi";
     VideoWriter fil (nm, VideoWriter::fourcc('M','P','E','G'), 30, Size(1080, 1920), 0);
-    #pragma omp parallel for num_threads(8) private(frame)
     for (int i = 0; i < cnt; i++) {
-        #pragma omp critical 
         cap >> frame;
         Mat * im = GrayscaleFilter(frame);
-        #pragma omp critical 
         fil << *im;
     }
 
