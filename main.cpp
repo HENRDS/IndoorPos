@@ -81,26 +81,24 @@ void gaussian_blur(Mat * frame) {
 
 void box_blur() { }
 
-Mat* process (Mat &frame, uchar threshold) {
-    Mat * result = new Mat(frame.size(), CV_8UC1);
+Mat process (Mat &frame, uchar threshold) {
+//    Mat * result = new Mat(frame.size(), CV_8UC1);
+    Mat result;
+    Orig.copyTo(result);
     uchar x, avgPix, r;
     char a;
     for (int i = 0; i < frame.size().height; i++) {
         for (int j = 0; j < frame.size().width; j++) {
             // Grayscale
-            //x = avg(frame.at<Vec3b>(i, j));
+            x = avg(frame.at<Vec3b>(i, j));
             // accumulateWeighted
-            avgPix = avgFrame.at<uchar>(i, j);
-            avgPix = (x + avgPix) / 2;
+            avgPix = x * 0.2 + avgFrame.at<uchar>(i, j) * 0.8;
             avgFrame.at<uchar>(i, j) = avgPix;
             // diff
             a = (char)x - (char)avgPix;
             x = (uchar) a > 0 ? a : -a;
             //Threshold
-            result->at<uchar>(i, j) = x > threshold ? x : 0;
-            r = Orig.at<Vec3b>(i, j)[0];
-            Orig.at<Vec3b>(i, j)[0] = ((int)r+(int)x > 255)? 255: r + x;
-            
+            result.at<Vec3b>(i, j)[2] = x > threshold ? 255 : 0;
         }
     }
     return result;
@@ -127,15 +125,12 @@ int main(int argc, char** argv) {
  
     int cnt = cap.get(CV_CAP_PROP_FRAME_COUNT);
     String nm = "grayscaleVid.avi";
-    Mat* im = 0;
-    VideoWriter fil (nm, VideoWriter::fourcc('M','P','E','G'), 30, Size(1080, 1920), 0);
+    Mat im;
+    VideoWriter fil (nm, VideoWriter::fourcc('M','P','E','G'), 30, Size(1080, 1920), 1);
     for (int i = 0; i < cnt; i++) {
-        cap >> frame;
-        frame = *GrayscaleFilter(frame);
-        //GaussianBlur(frame, blured, Size(51,51), 0);
-//        fil << blured;
+        cap >> frame;        
         im = process(frame, thresh);
-        fil << Orig;
+        fil << im;
     }
 
     
