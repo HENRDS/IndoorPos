@@ -17,6 +17,7 @@
 
 using namespace cv;
 
+Mat avgFrame, Orig;
 //inline uchar avg (uchar * vec) {
 //    return (*vec + *(vec+1) + *(vec+2)) / 3;
 //}
@@ -63,15 +64,15 @@ Mat* DifferenceFilter(Mat &reference_frame, Mat &frame) {
 
 Mat* ThresholdFilter(Mat &frame, uchar threshold) {
     Mat * result = new Mat(frame.size(), CV_8UC1);
+    uchar x;
     for (int i=0; i < frame.size().height; i++) {
         for (int j=0; j < frame.size().width; j++) {
-            result->at<uchar>(i,j) = frame.at<uchar>(i,j) > threshold ? frame.at<uchar>(i,j) : (uchar)0;
+            x = frame.at<uchar>(i,j); // saves 1 call to Mat::at<uchar>()
+            result->at<uchar>(i,j) = x > threshold ? x : (uchar)0;
         }
     }
     return result;
 }
-
-
 
 // Blur
 void gaussian_blur(Mat * frame) {
@@ -80,34 +81,64 @@ void gaussian_blur(Mat * frame) {
 
 void box_blur() { }
 
-void process (Mat &frame) {
-    Mat * gray = GrayscaleFilter(frame);
-    
+Mat* process (Mat &frame, uchar threshold) {
+    Mat * result = new Mat(frame.size(), CV_8UC1);
+    uchar x, avgPix, r;
+    char a;
+    for (int i = 0; i < frame.size().height; i++) {
+        for (int j = 0; j < frame.size().width; j++) {
+            // Grayscale
+            //x = avg(frame.at<Vec3b>(i, j));
+            // accumulateWeighted
+            avgPix = avgFrame.at<uchar>(i, j);
+            avgPix = (x + avgPix) / 2;
+            avgFrame.at<uchar>(i, j) = avgPix;
+            // diff
+            a = (char)x - (char)avgPix;
+            x = (uchar) a > 0 ? a : -a;
+            //Threshold
+            result->at<uchar>(i, j) = x > threshold ? x : 0;
+            r = Orig.at<Vec3b>(i, j)[0];
+            Orig.at<Vec3b>(i, j)[0] = ((int)r+(int)x > 255)? 255: r + x;
+            
+        }
+    }
+    return result;
 }
 /*
  * 
  */
 int main(int argc, char** argv) {
     VideoCapture cap("vv.mpeg");
-    
+    int thresh = 5;
+    if (argc == 1 )
+        thresh = atoi(argv[0]);
     if (!cap.isOpened())
         return -1;
     
-    Mat frame;
+    Mat frame, blured;
+    cap >> avgFrame;
+    avgFrame.copyTo(Orig);
+    avgFrame = *GrayscaleFilter(avgFrame);
+//    GaussianBlur(avgFrame, blured, Size(101,101), 50);
+//    std::cout << cap.get(CV_CAP_PROP_FRAME_COUNT) << std::endl;
+//    imwrite("xx.jpg", blured);
+//    return 0;
+ 
     int cnt = cap.get(CV_CAP_PROP_FRAME_COUNT);
     String nm = "grayscaleVid.avi";
+    Mat* im = 0;
     VideoWriter fil (nm, VideoWriter::fourcc('M','P','E','G'), 30, Size(1080, 1920), 0);
     for (int i = 0; i < cnt; i++) {
         cap >> frame;
-        Mat * im = GrayscaleFilter(frame);
-        fil << *im;
+        frame = *GrayscaleFilter(frame);
+        //GaussianBlur(frame, blured, Size(51,51), 0);
+//        fil << blured;
+        im = process(frame, thresh);
+        fil << Orig;
     }
 
     
-    imwrite( "Image.jpg", frame);
-    Mat * im = GrayscaleFilter(frame);
-    
-    imwrite( "Gray_Image.jpg", *im);
     
     return 0;
 }
