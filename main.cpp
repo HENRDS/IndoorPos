@@ -13,11 +13,9 @@
 
 
 #include "opencv2/opencv.hpp"
-#include <iostream>
-
 using namespace cv;
 
-Mat avgFrame, Orig;
+Mat backgroundFrame;
 //inline uchar avg (uchar * vec) {
 //    return (*vec + *(vec+1) + *(vec+2)) / 3;
 //}
@@ -37,104 +35,140 @@ Mat avgFrame, Orig;
 //    }
 //    return result;
 //}
-inline uchar avg (Vec3b & vec) {
-    return (vec(0) + vec(1) + vec(2)) / 3;
+
+const double MOVING_AVERAGE_FILTER_ALPHA = 0.2;
+
+/**
+ * Convert a RGB pixel to grayscale by obtaining the average between its components.
+ */
+inline uchar GrayscaleFilter (Vec3b &pixel) {
+    return (uchar)((pixel(0) + pixel(1) + pixel(2)) / 3);
 }
 
 Mat* GrayscaleFilter (Mat &frame) {
-    
     Mat * result = new Mat(frame.size(), CV_8UC1);
     for (int i=0; i < frame.size().height; i++) {
         for (int j = 0; j < frame.size().width; j++) {
-            result->at<uchar>(i, j) = avg(frame.at<Vec3b>(i, j));
+            result->at<uchar>(i, j) = GrayscaleFilter(frame.at<Vec3b>(i, j));
         }
     }
     return result;
+}
+
+/**
+ * Obtain the absolute difference between two grayscale pixels.
+ */
+inline uchar DifferenceFilter (uchar referencePixel, uchar pixel) {
+    return (referencePixel > pixel) ? referencePixel - pixel : pixel - referencePixel;
 }
 
 Mat* DifferenceFilter(Mat &reference_frame, Mat &frame) {
     Mat * result = new Mat(frame.size(), CV_8UC1);
     for (int i=0; i < frame.size().height; i++) {
         for (int j=0; j < frame.size().width; j++) {
-            result->at<uchar>(i,j) = frame.at<uchar>(i,j) - reference_frame.at<uchar>(i,j);
+            result->at<uchar>(i,j) = DifferenceFilter(reference_frame.at<uchar>(i,j), frame.at<uchar>(i,j));
         }
     }
     return result;
+}
+
+/**
+ * Set a pixel to either black or white, depending whether it is below or above a threshold.
+ */
+inline uchar ThresholdFilter (uchar pixel, uchar threshold) {
+    return  (pixel > threshold) ? (uchar)255 : (uchar)0;
 }
 
 Mat* ThresholdFilter(Mat &frame, uchar threshold) {
     Mat * result = new Mat(frame.size(), CV_8UC1);
-    uchar x;
     for (int i=0; i < frame.size().height; i++) {
         for (int j=0; j < frame.size().width; j++) {
-            x = frame.at<uchar>(i,j); // saves 1 call to Mat::at<uchar>()
-            result->at<uchar>(i,j) = x > threshold ? x : (uchar)0;
+            result->at<uchar>(i,j) = ThresholdFilter(frame.at<uchar>(i,j), threshold);
         }
     }
     return result;
 }
 
-// Blur
-void gaussian_blur(Mat * frame) {
-    
+/**
+ * Apply a weighted moving average filter.
+ */
+inline uchar MovingAverageFilter (uchar previousAverage, uchar currentPixel) {
+    return MOVING_AVERAGE_FILTER_ALPHA*currentPixel + (1 - MOVING_AVERAGE_FILTER_ALPHA)*previousAverage;
 }
 
-void box_blur() { }
+/**
+ *
+ */
+void GaussianBlurFilter(Mat * frame) {}
 
-Mat process (Mat &frame, uchar threshold) {
-//    Mat * result = new Mat(frame.size(), CV_8UC1);
-    Mat result;
-    Orig.copyTo(result);
-    uchar x, avgPix, r;
-    char a;
+/**
+ *
+ */
+void BoxBlurFilter() {}
+
+/**
+ *
+ */
+void process (Mat &frame, uchar threshold) {
     for (int i = 0; i < frame.size().height; i++) {
         for (int j = 0; j < frame.size().width; j++) {
-            // Grayscale
-            x = avg(frame.at<Vec3b>(i, j));
-            // accumulateWeighted
-            avgPix = x * 0.2 + avgFrame.at<uchar>(i, j) * 0.8;
-            avgFrame.at<uchar>(i, j) = avgPix;
-            // diff
-            a = (char)x - (char)avgPix;
-            x = (uchar) a > 0 ? a : -a;
-            //Threshold
-            result.at<Vec3b>(i, j)[2] = x > threshold ? 255 : 0;
+            Vec3b frame_pixel = frame.at<Vec3b>(i,j);
+            uchar background_pixel = backgroundFrame.at<uchar>(i, j);
+            //Obtain the grayscale version of the pixel in the current frame.
+            uchar pixel_grayscale = GrayscaleFilter(frame_pixel);
+            //Obtain the difference of the current frame and the background.
+            uchar pixel_difference = DifferenceFilter(background_pixel, pixel_grayscale);
+            uchar pixel_threshold = ThresholdFilter(pixel_difference, threshold);
+            //Update the background with information from the current frame using a moving average filter.
+            uchar updated_background_pixel = MovingAverageFilter(background_pixel, pixel_grayscale);
+            backgroundFrame.at<uchar>(i, j) = updated_background_pixel;
+            //Set the original RGB representation of the frame to grayscale by copying the grayscale value to each
+            //component.
+            frame.at<Vec3b>(i,j)(0) = pixel_grayscale;
+            frame.at<Vec3b>(i,j)(1) = pixel_grayscale;
+            frame.at<Vec3b>(i,j)(2) = pixel_grayscale;
+            //Update the RED component to show the difference;
+            frame.at<Vec3b>(i,j)(2) = pixel_threshold == (uchar)255 ? pixel_threshold : frame.at<Vec3b>(i,j)(2);
         }
     }
-    return result;
 }
-/*
+
+/**
  * 
  */
 int main(int argc, char** argv) {
-    VideoCapture cap("vv.mpeg");
-    int thresh = 5;
-    if (argc == 1 )
-        thresh = atoi(argv[0]);
-    if (!cap.isOpened())
+    //Load the video file from disk
+    VideoCapture inputVideo("input.mp4");
+    if (!inputVideo.isOpened())
         return -1;
-    
-    Mat frame, blured;
-    cap >> avgFrame;
-    avgFrame.copyTo(Orig);
-    avgFrame = *GrayscaleFilter(avgFrame);
-//    GaussianBlur(avgFrame, blured, Size(101,101), 50);
+
+    //Set the threshold used by the threshold filter based on the input arguments
+    int threshold = 75;
+    if (argc == 2 )
+        threshold = atoi(argv[1]);
+
+    //Set the first frame as the background frame and convert it to grayscale
+    inputVideo >> backgroundFrame;
+    backgroundFrame = *GrayscaleFilter(backgroundFrame);
+
+//    Mat blured;
+//    backgroundFrame.copyTo(Orig);
+//    GaussianBlur(backgroundFrame, blured, Size(101,101), 50);
 //    std::cout << cap.get(CV_CAP_PROP_FRAME_COUNT) << std::endl;
 //    imwrite("xx.jpg", blured);
 //    return 0;
- 
-    int cnt = cap.get(CV_CAP_PROP_FRAME_COUNT);
-    String nm = "grayscaleVid.avi";
-    Mat im;
-    VideoWriter fil (nm, VideoWriter::fourcc('M','P','E','G'), 30, Size(1080, 1920), 1);
-    for (int i = 0; i < cnt; i++) {
-        cap >> frame;        
-        im = process(frame, thresh);
-        fil << im;
+
+    VideoWriter outputVideo ("grayscaleVid.avi", VideoWriter::fourcc('M','P','E','G'), 30,
+                             Size(backgroundFrame.size().width,backgroundFrame.size().height), 1);
+
+    int frame_count = inputVideo.get(CV_CAP_PROP_FRAME_COUNT);
+    Mat current_frame;
+    for (int i = 0; i < frame_count; i++) {
+        inputVideo >> current_frame;
+        process(current_frame, threshold);
+        outputVideo << current_frame;
     }
 
-    
-    
     return 0;
 }
 
