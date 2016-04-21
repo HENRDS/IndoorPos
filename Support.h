@@ -5,9 +5,24 @@
 #ifndef INDOORPOS_SUPPORT_H
 #define INDOORPOS_SUPPORT_H
 
+#include "opencv2/opencv.hpp"
+#include "Filters.h"
+using namespace cv;
 
 class Support {
-
+ public:
+  /**
+   *
+   */
+  static double Mean(Mat& frame);
+  /**
+   *
+   */
+  static double StandardDeviation(Mat& frame, double mean);
+  /**
+   *
+   */
+  static double Variance(Mat& frame, double mean);
 };
 
 
