@@ -22,6 +22,11 @@ Mat backgroundFrame;
  *
  */
 void process (Mat &frame, uchar threshold) {
+
+   /* namedWindow("Display Image", WINDOW_AUTOSIZE );
+    imshow("Display Image", backgroundFrame);
+    waitKey(0);*/
+
     for (int i = 0; i < frame.size().height; i++) {
         for (int j = 0; j < frame.size().width; j++) {
             Vec3b frame_pixel = frame.at<Vec3b>(i,j);
@@ -34,13 +39,11 @@ void process (Mat &frame, uchar threshold) {
             //Update the background with information from the current frame using a moving average filter.
             uchar updated_background_pixel = Filters::MovingAverage(background_pixel, pixel_grayscale);
             backgroundFrame.at<uchar>(i, j) = updated_background_pixel;
-            //Set the original RGB representation of the frame to grayscale by copying the grayscale value to each
-            //component.
-            frame.at<Vec3b>(i,j)(0) = pixel_grayscale;
-            frame.at<Vec3b>(i,j)(1) = pixel_grayscale;
-            frame.at<Vec3b>(i,j)(2) = pixel_grayscale;
-            //Update the RED component to show the difference;
-            frame.at<Vec3b>(i,j)(2) = pixel_threshold == (uchar)255 ? pixel_threshold : frame.at<Vec3b>(i,j)(2);
+            //Set the original RGB representation of the frame to luma by copying the grayscale value to each
+            //component. Highlight movement areas with RED.
+            frame.at<Vec3b>(i,j)(0) = pixel_threshold == (uchar)255 ? (uchar) 0 : pixel_grayscale;
+            frame.at<Vec3b>(i,j)(1) = pixel_threshold == (uchar)255 ? (uchar) 0 : pixel_grayscale;
+            frame.at<Vec3b>(i,j)(2) = pixel_threshold == (uchar)255 ? (uchar) 255 : pixel_grayscale;
         }
     }
 }
