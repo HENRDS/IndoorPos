@@ -12,16 +12,18 @@
 using namespace cv;
 
 class Background {
+ private:
+  // Frames used for background estimation (t, t-1, t-2)
+  Mat last_frames[3];
+  // Create a mask showing the moving pixels in the frame t based on comparison with frames (t-1) and (t-2)
+  Mat* calculateMask();
  public:
-  // Frames used for background estimation
-  Mat older_frame; //frame at instant t-2
-  Mat old_frame; //frame at instant t-1
-  Mat frame; //frame at instant t
-
+  // Constructor
   Background(Mat& frame);
-
-  Mat *calculateMask();
+  // Update background estimation
   void updateBackground(Mat& frame);
+  // Current estimated background
+  Mat background_frame;
 };
 
 #endif //INDOORPOS_BACKGROUND_H

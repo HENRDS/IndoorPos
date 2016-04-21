@@ -3,62 +3,65 @@
 //
 
 #include "Background.h"
-#include <iostream>
 
-Background::Background(Mat& frame) {
-  updateBackground(frame);
+Background::Background(Mat& _frame) {
+  background_frame = _frame.clone();
+  last_frames[0] = background_frame;
+  last_frames[1] = background_frame;
+  last_frames[2] = background_frame;
 }
 
 Mat *Background::calculateMask() {
-  //Generate a matrix of absolute differences between frame and old_frame
-  Mat *abs_frame_oldframe = Filters::Difference(frame, old_frame);
+  //Generate a matrix of absolute differences between frame in t and in (t-1)
+  Mat *abs_frame_minus1 = Filters::Difference(last_frames[0], last_frames[1]);
 
-  //Generate a matrix of absolute differences between frame and older_frame
-  Mat *abs_frame_olderframe = Filters::Difference(frame, older_frame);
+  //Generate a matrix of absolute differences between frame in t and in (t-2)
+  Mat *abs_frame_minus2 = Filters::Difference(last_frames[0], last_frames[2]);
 
-  //Get the mean value from the absolute differences between frame and old_frame
-  double mean_frame_oldframe = Support::Mean(*abs_frame_oldframe);
+  //Get the mean value from the absolute differences between frame in t and in (t-1)
+  double mean_frame_minus1 = Support::Mean(*abs_frame_minus1);
 
-  //Get the mean value from the absolute differences between frame and older_frame
-  double mean_frame_olderframe = Support::Mean(*abs_frame_olderframe);
+  //Get the mean value from the absolute differences between frame in t and in (t-2)
+  double mean_frame_minus2 = Support::Mean(*abs_frame_minus2);
 
-  //Get the standard deviation of absolute differences between frame and old_frame
-  double std_deviation_frame_oldframe = Support::StandardDeviation(*abs_frame_oldframe, mean_frame_oldframe);
+  //Get the standard deviation of absolute differences between frame in t and in (t-1)
+  double std_deviation_frame_minus1 = Support::StandardDeviation(*abs_frame_minus1, mean_frame_minus1);
 
-  //Get the standard deviation of absolute differences between frame and older_frame
-  double std_deviation_frame_olderframe = Support::StandardDeviation(*abs_frame_olderframe, mean_frame_olderframe);
+  //Get the standard deviation of absolute differences between frame in t and in (t-2)
+  double std_deviation_frame_minus2 = Support::StandardDeviation(*abs_frame_minus2, mean_frame_minus2);
 
-  Mat *mask = new Mat(frame.size(), CV_8UC1);
+  Mat *mask = new Mat(last_frames[0].size(), CV_8UC1);
 
-  for (int i = 0; i < frame.size().height; i++) {
-    for (int j = 0; j < frame.size().width; j++) {
-      if (abs_frame_oldframe->at<uchar>(i, j) >= mean_frame_oldframe + std_deviation_frame_oldframe)
-        if (abs_frame_olderframe->at<uchar>(i,j) >= mean_frame_olderframe + std_deviation_frame_olderframe)
-          mask->at<uchar>(i,j) = 255;
+  for (int i = 0; i < last_frames[0].size().height; i++) {
+    for (int j = 0; j < last_frames[0].size().width; j++) {
+      if (abs_frame_minus1->at<uchar>(i,j) >= mean_frame_minus1 + std_deviation_frame_minus1)
+      if (abs_frame_minus2->at<uchar>(i,j) >= mean_frame_minus2 + std_deviation_frame_minus2)
+        mask->at<uchar>(i,j) = 1;
       else
-          mask->at<uchar>(i,j) = 0;
+        mask->at<uchar>(i,j) = 0;
+    }
+  }
+  return mask;
+}
+
+void Background::updateBackground(Mat& _frame) {
+  //Update the pointers with the three last frames location
+  last_frames[2] = last_frames[1];
+  last_frames[1] = last_frames[0];
+  last_frames[0] = _frame.clone();
+
+  Mat* mask = calculateMask();
+
+  //Only update the background with pixels from the current frame, if the pixels are not considered part of a movement.
+  for (int i = 0; i < last_frames[0].size().height; i++) {
+    for (int j = 0; j < last_frames[0].size().width; j++) {
+      if (mask->at<uchar>(i,j) == 0)
+        background_frame.at<uchar>(i,j) = Filters::MovingAverage(background_frame.at<uchar>(i,j),
+                                                                 last_frames[0].at<uchar>(i,j));
     }
   }
 
   namedWindow("Display Image", WINDOW_AUTOSIZE );
-
-  imshow("Display Image", *mask);
-
+  imshow("Display Image", background_frame);
   waitKey(0);
-
-  return NULL;
-}
-
-void Background::updateBackground(Mat& _frame) {
-  if (older_frame.data == NULL)
-    older_frame = _frame.clone();
-  else
-    older_frame = old_frame;
-
-  if (old_frame.data == NULL)
-    old_frame = _frame.clone();
-  else
-    old_frame = frame;
-
-  frame = _frame.clone();
 }
