@@ -6,9 +6,27 @@
 
 #IncludeRegexTransform: 
 
+/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/Background.cpp
+Background.h
+/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/Background.h
+
+/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/Background.h
+opencv2/opencv.hpp
+/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/opencv2/opencv.hpp
+
+/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/Filters.cpp
+Filters.h
+/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/Filters.h
+
+/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/Filters.h
+opencv2/opencv.hpp
+/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/opencv2/opencv.hpp
+
 /media/henry/Files/Henry/INE5435/project/Model/IndoorPos/main.cpp
 opencv2/opencv.hpp
 /media/henry/Files/Henry/INE5435/project/Model/IndoorPos/opencv2/opencv.hpp
+Filters.h
+/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/Filters.h
 iostream
 -
 

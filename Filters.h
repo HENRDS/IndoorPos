@@ -13,7 +13,7 @@ public:
     /**
      * Convert a RGB pixel to grayscale by obtaining the average between its components.
      */
-    static uchar Grayscale (Vec3b &pixel);
+    static uchar grayscale(Vec3b &pixel);
     static Mat* Grayscale (Mat &frame);
     /**
      * Obtain the luminace component from an RGB color space

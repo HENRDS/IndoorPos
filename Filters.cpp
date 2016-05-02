@@ -4,7 +4,7 @@
 
 #include "Filters.h"
 
-inline uchar Filters::Grayscale (Vec3b &pixel) {
+inline uchar Filters::grayscale(Vec3b &pixel) {
     return (uchar)((pixel(0) + pixel(1) + pixel(2)) / 3);
 }
 
@@ -12,7 +12,7 @@ Mat* Filters::Grayscale (Mat &frame) {
     Mat * result = new Mat(frame.size(), CV_8UC1);
     for (int i=0; i < frame.size().height; i++) {
         for (int j = 0; j < frame.size().width; j++) {
-            result->at<uchar>(i, j) = Filters::Grayscale(frame.at<Vec3b>(i, j));
+            result->at<uchar>(i, j) = Filters::grayscale(frame.at<Vec3b>(i, j));
         }
     }
     return result;
@@ -65,24 +65,24 @@ uchar Filters::MovingAverage (uchar previousAverage, uchar currentPixel) {
     return MOVING_AVERAGE_FILTER_ALPHA*currentPixel + (1 - MOVING_AVERAGE_FILTER_ALPHA)*previousAverage;
 }
 
-//inline uchar avg (uchar * vec) {
-//    return (*vec + *(vec+1) + *(vec+2)) / 3;
-//}
+
+//void box_blur_T(const Mat &frame, Mat &result, int w, int h, int r) {
+//    double iarr = 1 / (2 * r + 1);
+//    for (int i = 0; i < w; ++i) {
+//        int ti = i,
+//            li = ti;//
 //
-//Mat * grayscale (Mat &frame) {
-//    Mat * result = new Mat(frame.size(), CV_8UC1);
-//    std::cout << frame.rows << "x" << frame.cols << std::endl;
-//    for (int i=0; i < frame.rows; i++) {
-//        uchar * res= result->ptr(i);
-//        uchar * frptr = frame.ptr(i);
-//        for (int j = 0; j < frame.cols; j++) {
-//            if ((i  >  1920) || (j > 1080))
-//                std::cout << "EOI" << std::endl;
-//            *res = avg(frptr+(3*i));
-//            std::cout << *res << std::endl;
+//        uchar fv = frame.at<uchar>(ti, 0),
+//              lv = frame.at<uchar>(h-1, ti),
+//              val = (r+1) * fv;
+//
+//        for (int j = 0; j < r; ++j)
+//            val += frame.at<uchar>(j, ti);
+//        for (int j = 0; j <= r; ++j) {
+//            val += frame.at<uchar>(r, ti) - fv;
+//            result.at<uchar>()
 //        }
 //    }
-//    return result;
 //}
 
 /**

@@ -18,4 +18,5 @@ public:
     Mat * calculateMask();
 };
 
+
 #endif //INDOORPOS_BACKGROUND_H
