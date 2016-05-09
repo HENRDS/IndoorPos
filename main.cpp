@@ -23,6 +23,8 @@ int pixelThresholdVal = 75;
 // Block size MUST be some n where n = 2^k
 int blockSize = 8;
 
+
+
 /**
  *
  */
@@ -124,8 +126,6 @@ void block(Mat *frame, int h, int w, int thresh) {
     }
 }
 
-inline int min (const int a, const int b) { return a < b ? a : b; }
-inline int max (const int a, const int b) { return a > b ? a : b; }
 const double PI = 3.14159265359;
 
 Mat gaussianBlur(Mat &frame, int radius) {
@@ -191,9 +191,11 @@ int main(int argc, char** argv) {
     Mat current_frame;
     std::cout << "Starting... " << frame_count << " frames to go"<< std::endl;
     for (int i = 0; i < frame_count; i++) {
-        inputVideo >> current_frame;
-        //process(current_frame, threshold);
-        block(&current_frame, current_frame.size().height, current_frame.size().width, 10);
+        if (i % 3 == 0) {
+            inputVideo >> current_frame;
+            //process(current_frame, threshold);
+            block(&current_frame, current_frame.size().height, current_frame.size().width, 10);
+        }
         outputVideo << current_frame;
     }
 
