@@ -14,10 +14,14 @@
 
 #include "opencv2/opencv.hpp"
 #include "Filters.h"
-#include <iostream>
+#define SEE_BACK_
 using namespace cv;
 
-Mat backgroundFrame, blured;
+Mat backgroundFrame;
+//Set the threshold used by the threshold filter based on the input arguments
+int pixelThresholdVal = 75;
+// Block size MUST be some n where n = 2^k
+int blockSize = 8;
 
 /**
  *
@@ -25,7 +29,6 @@ Mat backgroundFrame, blured;
 void process (Mat &frame, uchar threshold) {
     Vec3b *frame_pixel = 0;
     uchar *background_pixel = 0;
-    uchar zero = 0;
     for (int i = 0; i < frame.size().height; i++) {
         for (int j = 0; j < frame.size().width; j++) {
             frame_pixel = &frame.at<Vec3b>(i,j);
@@ -55,32 +58,68 @@ void process (Mat &frame, uchar threshold) {
     }
 }
 
+void processPixel(Vec3b *pixel, uchar *background)
+{
+    //Obtain the grayscale version of the pixel in the current frame.
+    uchar pixel_grayscale = Filters::Luminance(*pixel);
+    //Obtain the difference of the current frame and the background.
+    uchar pixel_difference = Filters::Difference(*background, pixel_grayscale);
+    uchar pixel_threshold = Filters::Threshold(pixel_difference, pixelThresholdVal);
+    //Update the background with information from the current frame using a moving average filter.
+    (*background) = Filters::MovingAverage(*background, pixel_grayscale);
+    //Set the original RGB representation of the frame to grayscale by copying the grayscale value to each
+    //component.
+#ifdef SEE_BACK_
+    (*pixel)(0) = pixel_grayscale;
+    (*pixel)(1) = pixel_grayscale;
+    (*pixel)(2) = pixel_threshold == (uchar)255 ? pixel_threshold : pixel_grayscale;
+#else
+    if (pixel_threshold == (uchar)255 ) {
+        (*pixel)(0) = 255;
+        (*pixel)(1) = 255;
+        (*pixel)(2) = 255;
+    } else {
+        (*pixel)(0) = 0;
+        (*pixel)(1) = 0;
+        (*pixel)(2) = 0;
+    }
+#endif
+}
 
-void fillBlock (Mat *frame, int x, int y, int h, int w, int thresh) {
+
+void processBlock(Mat *frame, int x, int y, int sz, int thresh) {
     int acc = 0;
-    for (int i = 0; i < h; ++i) {
-        for (int j = 0; j < w; ++j) {
-            acc += (frame->at<Vec3b>(y+i, x+j)(0) == 255 ? 1 : 0);
+    Vec3b *pix = 0;
+    uchar *back = 0;
+    for (int i = 0; i < sz; ++i) {
+        for (int j = 0; j < sz; ++j) {
+            pix = &frame->at<Vec3b>(y+i, x+j);
+            back = &backgroundFrame.at<uchar>(y+i, x+j);
+            processPixel(pix, back);
+            acc += ((*pix)(2) == 255 ? 1 : 0);
         }
     }
     uchar color = (uchar)((acc > thresh) ? 255 : 0);
-    Vec3b *pix = 0;
-    for (int i = 0; i < h; ++i) {
-        for (int j = 0; j < w; ++j) {
+
+    for (int i = 0; i < sz; ++i) {
+        for (int j = 0; j < sz; ++j) {
             pix = &(frame->at<Vec3b>(y+i, x+j));
+#ifndef SEE_BACK_
             (*pix)(0)= color;
             (*pix)(1)= color;
+#endif
             (*pix)(2)= color;
         }
     }
 }
 
 void block(Mat *frame, int h, int w, int thresh) {
-    int vB = (h >> 3), hB = (w >> 3);
+    int shift = (int) log2((double)blockSize);
+    int vB = (h >> shift), hB = (w >> shift);
 
     for (int i = 0; i < vB; ++i) {
         for (int j = 0; j < hB; ++j) {
-            fillBlock(frame, j*8, i*8, 8, 8, thresh);
+            processBlock(frame, j * blockSize, i * blockSize, blockSize, thresh);
         }
     }
 }
@@ -124,8 +163,6 @@ Mat gaussianBlur(Mat &frame, int radius) {
  */
 int main(int argc, char** argv) {
     String inputFile = "input.mp4", outputFile = "grayscaleVid.avi";
-    //Set the threshold used by the threshold filter based on the input arguments
-    int threshold = 75;
     /* Args:
      * 1 - Threshold
      * 2 - input file
@@ -134,7 +171,7 @@ int main(int argc, char** argv) {
     {
         case 4: outputFile = argv[3];
         case 3: inputFile = argv[2];
-        case 2: threshold = atoi(argv[1]); break;
+        case 2: pixelThresholdVal = atoi(argv[1]); break;
     };
 
     //Load the video file from disk
@@ -155,8 +192,8 @@ int main(int argc, char** argv) {
     std::cout << "Starting... " << frame_count << " frames to go"<< std::endl;
     for (int i = 0; i < frame_count; i++) {
         inputVideo >> current_frame;
-        process(current_frame, threshold);
-        block(&current_frame, current_frame.size().height, current_frame.size().width, 16);
+        //process(current_frame, threshold);
+        block(&current_frame, current_frame.size().height, current_frame.size().width, 10);
         outputVideo << current_frame;
     }
 
