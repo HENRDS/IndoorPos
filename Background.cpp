@@ -4,45 +4,63 @@
 
 #include "Background.h"
 
-Mat* Background::calculateMask() {
-    //Generate a matrix of absolute differences between frame and old_frame
-    Mat * abs_frame_oldframe = new Mat(frame->size(), CV_8UC1);
-    for (int i=0; i < frame->size().height; i++) {
-        for (int j = 0; j < frame->size().width; j++) {
-            uchar frame_pixel = frame->at<uchar>(i,j);
-            uchar old_frame_pixel = old_frame->at<uchar>(i,j);
-            abs_frame_oldframe->at<uchar>(i,j) = (frame_pixel > old_frame_pixel) ? frame_pixel - old_frame_pixel
-                                                                                 : old_frame_pixel - frame_pixel;
+Background::Background(Mat& _frame) {
+    background_frame = _frame.clone();
+    last_frames[0] = background_frame;
+    last_frames[1] = background_frame;
+    last_frames[2] = background_frame;
+}
+
+Mat *Background::calculateMask() {
+    //Generate a matrix of absolute differences between frame in t and in (t-1)
+    Mat *abs_frame_minus1 = Filters::Difference(last_frames[0], last_frames[1]);
+
+    //Generate a matrix of absolute differences between frame in t and in (t-2)
+    Mat *abs_frame_minus2 = Filters::Difference(last_frames[0], last_frames[2]);
+
+    //Get the mean value from the absolute differences between frame in t and in (t-1)
+    double mean_frame_minus1 = Support::Mean(*abs_frame_minus1);
+
+    //Get the mean value from the absolute differences between frame in t and in (t-2)
+    double mean_frame_minus2 = Support::Mean(*abs_frame_minus2);
+
+    //Get the standard deviation of absolute differences between frame in t and in (t-1)
+    double std_deviation_frame_minus1 = Support::StandardDeviation(*abs_frame_minus1, mean_frame_minus1);
+
+    //Get the standard deviation of absolute differences between frame in t and in (t-2)
+    double std_deviation_frame_minus2 = Support::StandardDeviation(*abs_frame_minus2, mean_frame_minus2);
+
+    Mat *mask = new Mat(last_frames[0].size(), CV_8UC1);
+
+    for (int i = 0; i < last_frames[0].size().height; i++) {
+        for (int j = 0; j < last_frames[0].size().width; j++) {
+            if (abs_frame_minus1->at<uchar>(i,j) >= mean_frame_minus1 + std_deviation_frame_minus1)
+            if (abs_frame_minus2->at<uchar>(i,j) >= mean_frame_minus2 + std_deviation_frame_minus2)
+                mask->at<uchar>(i,j) = 255;
+            else
+                mask->at<uchar>(i,j) = 0;
         }
     }
 
-    //Generate a matrix of absolute differences between frame and older_frame
-    Mat * abs_frame_olderframe = new Mat(frame->size(), CV_8UC1);
-    for (int i=0; i < frame->size().height; i++) {
-        for (int j = 0; j < frame->size().width; j++) {
-            uchar frame_pixel = frame->at<uchar>(i,j);
-            uchar older_frame_pixel = older_frame->at<uchar>(i,j);
-            abs_frame_olderframe->at<uchar>(i,j) = (frame_pixel > older_frame_pixel) ? frame_pixel - older_frame_pixel
-                                                                                     : older_frame_pixel - frame_pixel;
+    Mat* mask_2 = Filters::BinaryBlocks(*mask, 8, 2);
+
+    return mask_2;
+}
+
+void Background::updateBackground(Mat& _frame) {
+    //Update the pointers with the three last frames location
+    last_frames[2] = last_frames[1];
+    last_frames[1] = last_frames[0];
+    last_frames[0] = _frame.clone();
+
+    Mat* mask = calculateMask();
+
+    //Only update the background with pixels from the current frame, if the pixels are not considered part of a movement.
+    for (int i = 0; i < last_frames[0].size().height; i++) {
+        for (int j = 0; j < last_frames[0].size().width; j++) {
+            if (mask->at<uchar>(i,j) == 0)
+                background_frame.at<uchar>(i,j) = Filters::MovingAverage(background_frame.at<uchar>(i,j),
+                                                                         last_frames[0].at<uchar>(i,j));
         }
     }
-
-    //Get the mean value from the absolute differences between frame and old_frame
-    long mean_abs_frame_oldframe = 0;
-    for (int i=0; i < frame->size().height; i++) {
-        for (int j = 0; j < frame->size().width; j++) {
-            mean_abs_frame_oldframe += abs_frame_olderframe->at<uchar>(i,j);
-        }
-    }
-    mean_abs_frame_oldframe /= frame->size().height * frame->size().width;
-
-    //Get the variance from the absolute differences between frame and old_frame
-    long variance_abs_frame_oldframe = 0;
-    for (int i=0; i < frame->size().height; i++) {
-        for (int j = 0; j < frame->size().width; j++) {
-            mean_abs_frame_oldframe += abs_frame_olderframe->at<uchar>(i,j);
-        }
-    }
-
-    return NULL;
 }
