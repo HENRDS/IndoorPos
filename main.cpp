@@ -22,6 +22,7 @@ int pixel_threshold_value = 75;
 // Block size MUST be some n where n = 2^k
 int block_size = 8;
 
+
 /**
  *
  */
