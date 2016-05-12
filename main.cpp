@@ -14,44 +14,45 @@
 #include "opencv2/opencv.hpp"
 #include "Filters.h"
 #include "Background.h"
-#define SEE_BACK_
+
 using namespace cv;
 
 //Set the threshold used by the threshold filter based on the input arguments
-int pixel_threshold_value = 75;
+int pixel_threshold_value = 50;
 // Block size MUST be some n where n = 2^k
-int block_size = 8;
+int block_size = 16;
+// Enable background in output
+bool SEE_BACK_ = true;
 
 /**
  *
  */
-void process(Mat &frame, Background* background) {
+void process(Mat* frame, Background* background) {
     //Obtain the luma version of the current frame
-    Mat luma_frame = *Filters::Luminance(frame);
+    Mat* luma_frame = new Mat(frame->size(), CV_8UC1);
+    Filters::Luminance(luma_frame, frame);
+
     //Update the background based on information from the current frame
     background->updateBackground(luma_frame);
-    //Obtain the difference of the current frame and the background.
-    Mat difference_frame = *Filters::Difference(luma_frame, background->background_frame);
-    Mat threshold_frame = *Filters::Threshold(difference_frame, pixel_threshold_value);
-    Mat block_movements_frame = *Filters::BinaryBlocks(threshold_frame, block_size, 2);
 
-    for (int i = 0; i < frame.size().height; i++) {
-        for (int j = 0; j < frame.size().width; j++) {
-            uchar luma_pixel =  luma_frame.at<uchar>(i,j);
-            uchar tresh_pixel = block_movements_frame.at<uchar>(i, j);
-            //Set the original RGB representation of the frame to grayscale by copying the grayscale value to each
-            //component.
-#ifdef SEE_BACK_
-            frame.at<Vec3b>(i, j)(0) = tresh_pixel == (uchar) 255 ? (uchar)0 : luma_pixel;
-            frame.at<Vec3b>(i, j)(1) = tresh_pixel == (uchar) 255 ? (uchar)0 : luma_pixel;
-            frame.at<Vec3b>(i, j)(2) = tresh_pixel == (uchar) 255 ? (uchar)255 : luma_pixel;
-#else
-            frame.at<Vec3b>(i, j)(0) = tresh_pixel == (uchar) 255 ? (uchar)0 : 0;
-            frame.at<Vec3b>(i, j)(1) = tresh_pixel == (uchar) 255 ? (uchar)0 : 0;
-            frame.at<Vec3b>(i, j)(2) = tresh_pixel == (uchar) 255 ? (uchar)255 : 0;
-#endif
-        }
-    }
+    //Obtain the difference of the current frame and the background.
+    Mat* difference_frame = new Mat(frame->size(), CV_8UC1);
+    Filters::AbsoluteDifference(difference_frame, luma_frame, background->background_frame);
+
+    //Keep only the differences above the threshold value
+    Mat* threshold_frame = new Mat(frame->size(), CV_8UC1);
+    Filters::Threshold(threshold_frame, difference_frame, pixel_threshold_value);
+
+    Mat* block_movements_frame = new Mat(frame->size(), CV_8UC1);
+    Filters::BinaryBlocks(block_movements_frame, threshold_frame, block_size, 6);
+
+    Filters::HighlightMask(frame, block_movements_frame, SEE_BACK_);
+
+    //Free resources
+    luma_frame->release();
+    difference_frame->release();
+    threshold_frame->release();
+    block_movements_frame->release();
 }
 
 void processPixel(Vec3b *pixel, uchar *background)
@@ -59,7 +60,7 @@ void processPixel(Vec3b *pixel, uchar *background)
     //Obtain the grayscale version of the pixel in the current frame.
     uchar pixel_grayscale = Filters::Luminance(*pixel);
     //Obtain the difference of the current frame and the background.
-    uchar pixel_difference = Filters::Difference(*background, pixel_grayscale);
+    uchar pixel_difference = Filters::AbsoluteDifference(*background, pixel_grayscale);
     uchar pixel_threshold = Filters::Threshold(pixel_difference, pixel_threshold_value);
     //Update the background with information from the current frame using a moving average filter.
     (*background) = Filters::MovingAverage(*background, pixel_grayscale);
@@ -142,24 +143,27 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    //Set the first frame as the background frame and convert it to grayscale
-    Mat background_frame;
-    input_video >> background_frame;
-    background_frame = *Filters::Luminance(background_frame);
-    Background *background = new Background(background_frame);
+    //Set the first frame as the background frame and convert it to luma
+    Mat* first_frame = new Mat();
+    input_video.read(*first_frame);
+    Mat* background_frame = new Mat(first_frame->size(), CV_8UC1);
+    Filters::Luminance(background_frame, first_frame);
+    first_frame->release();
+
+    Background* background = new Background(background_frame);
     VideoWriter output_video (output_file, VideoWriter::fourcc('M','P','E','G'), 30,
-                              Size(background_frame.size().width,background_frame.size().height), 1);
+                              Size(background_frame->size().width,background_frame->size().height), 1);
 
     int frame_count = (int)input_video.get(CV_CAP_PROP_FRAME_COUNT);
-    Mat current_frame;
+    Mat* current_frame = new Mat();
     std::cout << "Starting... " << frame_count << " frames to go"<< std::endl;
     for (int i = 0; i < frame_count - 1; i++) {
         if (i % 3 == 0) {
-            input_video >> current_frame;
+            input_video.read(*current_frame);
             process(current_frame, background);
             //block(current_frame, 10, background);
         }
-        output_video << current_frame;
+        output_video << *current_frame;
     }
     return 0;
 }

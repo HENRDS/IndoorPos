@@ -14,15 +14,15 @@ public:
     /**
      *
      */
-    static double Mean(Mat& frame);
+    static double Mean(Mat* input);
     /**
      *
      */
-    static double StandardDeviation(Mat& frame, double mean);
+    static double StandardDeviation(Mat* frame, double mean);
     /**
      *
      */
-    static double Variance(Mat& frame, double mean);
+    static double Variance(Mat* input, double mean);
 };
 
 

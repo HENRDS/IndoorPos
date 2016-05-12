@@ -12,25 +12,31 @@ class Filters {
 public:
     /**
      * Convert a RGB pixel to grayscale by obtaining the average between its components.
+     * Mat input type - CV_8UC3
+     * Mat output type - CV_8UC1
      */
     static uchar Grayscale(Vec3b &pixel);
-    static Mat *Grayscale(Mat &frame);
+    static void Grayscale(Mat* output, Mat* input);
     /**
      * Obtain the luminace component from an RGB color space
      * Luminance = 0.2989*RED + 0.5870*GREEN + 0.1140*BLUE
+     * Mat input type - CV_8UC3
+     * Mat output type - CV_8UC1
      */
     static uchar Luminance(Vec3b &pixel);
-    static Mat *Luminance(Mat &frame);
+    static void Luminance(Mat* output, Mat* input);
     /**
      * Obtain the absolute difference between two grayscale pixels.
+     * Mat type - CV_8UC1
      */
-    static uchar Difference(uchar referencePixel, uchar pixel);
-    static Mat *Difference(Mat &reference_frame, Mat &frame);
+    static uchar AbsoluteDifference(uchar referencePixel, uchar pixel);
+    static void AbsoluteDifference(Mat* output, Mat* frame_a, Mat* frame_b);
     /**
      * Set a pixel to either black or white, depending whether it is below or above a threshold.
+     * Mat type - CV_8UC1
      */
     static uchar Threshold(uchar pixel, uchar threshold);
-    static Mat *Threshold(Mat &frame, uchar threshold);
+    static void Threshold(Mat* output, Mat* input, uchar threshold);
     /**
      * Apply a weighted moving average filter.
      */
@@ -39,10 +45,14 @@ public:
      *
      */
     static Mat GaussianBlur(Mat &frame, int radius);
-    /*
+    /**
+     * Mat type - CV_8UC1
+     */
+    static void BinaryBlocks(Mat* output, Mat* input, int block_size, int threshold);
+    /**
      *
      */
-    static Mat *BinaryBlocks(Mat &frame, int block_size, int threshold);
+     static void HighlightMask(Mat *output, Mat *mask, bool keep_back);
 };
 
 

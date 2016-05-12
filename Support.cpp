@@ -4,30 +4,30 @@
 
 #include "Support.h"
 
-double Support::Mean(Mat &frame) {
+double Support::Mean(Mat* input) {
     double mean = 0;
-    for (int i = 0; i < frame.size().height; i++) {
-        for (int j = 0; j < frame.size().width; j++) {
-            mean += frame.at<uchar>(i, j);
+    for (int i = 0; i < input->size().height; i++) {
+        for (int j = 0; j < input->size().width; j++) {
+            mean += input->at<uchar>(i, j);
         }
     }
     if (mean != 0)
-        mean /= frame.size().height * frame.size().width;
+        mean /= input->size().height * input->size().width;
     return mean;
 }
 
-double Support::StandardDeviation(Mat &frame, double mean) {
-    return sqrt(Variance(frame,mean));
+double Support::StandardDeviation(Mat *input, double mean) {
+    return sqrt(Variance(input,mean));
 }
 
-double Support::Variance(Mat &frame, double mean) {
+double Support::Variance(Mat* input, double mean) {
     double variance = 0;
-    for (int i = 0; i < frame.size().height; i++) {
-        for (int j = 0; j < frame.size().width; j++) {
-            variance += pow(frame.at<uchar>(i, j) - mean,2);
+    for (int i = 0; i < input->size().height; i++) {
+        for (int j = 0; j < input->size().width; j++) {
+            variance += pow(input->at<uchar>(i, j) - mean,2);
         }
     }
     if (variance != 0)
-        variance /= frame.size().height * frame.size().width;
+        variance /= input->size().height * input->size().width;
     return variance;
 }

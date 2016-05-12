@@ -8,56 +8,48 @@ inline uchar Filters::Grayscale(Vec3b &pixel) {
     return (uchar) ((pixel(0) + pixel(1) + pixel(2)) / 3);
 }
 
-Mat *Filters::Grayscale(Mat &frame) {
-    Mat *result = new Mat(frame.size(), CV_8UC1);
-    for (int i = 0; i < frame.size().height; i++) {
-        for (int j = 0; j < frame.size().width; j++) {
-            result->at<uchar>(i, j) = Filters::Grayscale(frame.at<Vec3b>(i, j));
+void Filters::Grayscale(Mat* output, Mat* input) {
+    for (int i = 0; i < input->size().height; i++) {
+        for (int j = 0; j < input->size().width; j++) {
+            output->at<uchar>(i, j) = Filters::Grayscale(input->at<Vec3b>(i, j));
         }
     }
-    return result;
 }
 
 inline uchar Filters::Luminance(Vec3b &pixel) {
     return (uchar) (0.2989 * pixel(2) + 0.5870 * pixel(1) + 0.1140 * pixel(0));
 }
 
-Mat *Filters::Luminance(Mat &frame) {
-    Mat *result = new Mat(frame.size(), CV_8UC1);
-    for (int i = 0; i < frame.size().height; i++) {
-        for (int j = 0; j < frame.size().width; j++) {
-            result->at<uchar>(i, j) = Filters::Luminance(frame.at<Vec3b>(i, j));
+void Filters::Luminance(Mat* output, Mat* input) {
+    for (int i = 0; i < input->size().height; i++) {
+        for (int j = 0; j < input->size().width; j++) {
+            output->at<uchar>(i, j) = Filters::Luminance(input->at<Vec3b>(i, j));
         }
     }
-    return result;
 }
 
-inline uchar Filters::Difference(uchar referencePixel, uchar pixel) {
+inline uchar Filters::AbsoluteDifference(uchar referencePixel, uchar pixel) {
     return (referencePixel > pixel) ? referencePixel - pixel : pixel - referencePixel;
 }
 
-Mat *Filters::Difference(Mat &reference_frame, Mat &frame) {
-    Mat *result = new Mat(frame.size(), CV_8UC1);
-    for (int i = 0; i < frame.size().height; i++) {
-        for (int j = 0; j < frame.size().width; j++) {
-            result->at<uchar>(i, j) = Filters::Difference(reference_frame.at<uchar>(i, j), frame.at<uchar>(i, j));
+void Filters::AbsoluteDifference(Mat* output, Mat* frame_a, Mat* frame_b) {
+    for (int i = 0; i < output->size().height; i++) {
+        for (int j = 0; j < output->size().width; j++) {
+            output->at<uchar>(i, j) = Filters::AbsoluteDifference(frame_a->at<uchar>(i, j), frame_b->at<uchar>(i, j));
         }
     }
-    return result;
 }
 
 inline uchar Filters::Threshold(uchar pixel, uchar threshold) {
     return (pixel > threshold) ? (uchar) 255 : (uchar) 0;
 }
 
-Mat *Filters::Threshold(Mat &frame, uchar threshold) {
-    Mat *result = new Mat(frame.size(), CV_8UC1);
-    for (int i = 0; i < frame.size().height; i++) {
-        for (int j = 0; j < frame.size().width; j++) {
-            result->at<uchar>(i, j) = Filters::Threshold(frame.at<uchar>(i, j), threshold);
+void Filters::Threshold(Mat* output, Mat* input, uchar threshold) {
+    for (int i = 0; i < input->size().height; i++) {
+        for (int j = 0; j < input->size().width; j++) {
+            output->at<uchar>(i, j) = Filters::Threshold(input->at<uchar>(i, j), threshold);
         }
     }
-    return result;
 }
 
 const double MOVING_AVERAGE_FILTER_ALPHA = 0.05;
@@ -65,11 +57,9 @@ uchar Filters::MovingAverage(uchar previousAverage, uchar currentPixel) {
     return MOVING_AVERAGE_FILTER_ALPHA * currentPixel + (1 - MOVING_AVERAGE_FILTER_ALPHA) * previousAverage;
 }
 
-Mat *Filters::BinaryBlocks(Mat &frame, int block_size, int threshold) {
-    Mat *result = new Mat(frame.size(), CV_8UC1);
-
-    int frame_height = frame.size().height;
-    int frame_width = frame.size().width;
+void Filters::BinaryBlocks(Mat* output, Mat* input, int block_size, int threshold) {
+    int frame_height = input->size().height;
+    int frame_width = input->size().width;
 
     //Since the block_size must be power of 2, it is possible to divide only by executing shifts
     int log2_block_size = (int) log2((double)block_size);
@@ -87,7 +77,7 @@ Mat *Filters::BinaryBlocks(Mat &frame, int block_size, int threshold) {
             //Count the number of pixels in the block with color 255
             for (int i_pixel = 0; i_pixel < block_size; i_pixel++) {
                 for (int j_pixel = 0; j_pixel < block_size; j_pixel++) {
-                    if (frame.at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) == 255)
+                    if (input->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) == 255)
                         modified_pixels++;
                 }
             }
@@ -96,15 +86,33 @@ Mat *Filters::BinaryBlocks(Mat &frame, int block_size, int threshold) {
             for (int i_pixel = 0; i_pixel < block_size; i_pixel++) {
                 for (int j_pixel = 0; j_pixel < block_size; j_pixel++) {
                     if (modified_pixels > threshold)
-                        result->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) = 255;
+                        output->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) = 255;
                     else
-                        result->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) = 0;
+                        output->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) = 0;
                 }
             }
         }
     }
+}
 
-    return result;
+void Filters::HighlightMask(Mat *output, Mat *mask, bool keep_back){
+    for (int i = 0; i < mask->size().height; i++) {
+        for (int j = 0; j < mask->size().width; j++) {
+            uchar tresh_pixel = mask->at<uchar>(i, j);
+
+            if (keep_back) {
+                if (tresh_pixel == (uchar) 255) {
+                    output->at<Vec3b>(i, j)(0) = (uchar)0;
+                    output->at<Vec3b>(i, j)(1) = (uchar)0;
+                    output->at<Vec3b>(i, j)(2) = (uchar)255;
+                }
+            } else {
+                output->at<Vec3b>(i, j)(0) = tresh_pixel == (uchar) 255 ? (uchar)0 : 0;
+                output->at<Vec3b>(i, j)(1) = tresh_pixel == (uchar) 255 ? (uchar)0 : 0;
+                output->at<Vec3b>(i, j)(2) = tresh_pixel == (uchar) 255 ? (uchar)255 : 0;
+            }
+        }
+    }
 }
 
 const double PI = 3.14159265359;
