@@ -53,6 +53,10 @@ public:
      *
      */
      static void HighlightMask(Mat *output, Mat *mask, bool keep_back);
+    /**
+     *
+     */
+    static void Closing(Mat* output, Mat* input, int size);
 };
 
 

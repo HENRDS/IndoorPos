@@ -18,11 +18,13 @@
 using namespace cv;
 
 //Set the threshold used by the threshold filter based on the input arguments
-int pixel_threshold_value = 50;
+int pixel_threshold_value = 40;
 // Block size MUST be some n where n = 2^k
-int block_size = 16;
+int block_size = 4;
 // Enable background in output
 bool SEE_BACK_ = true;
+// Set up the detector with default parameters.
+SimpleBlobDetector detector;
 
 /**
  *
@@ -43,8 +45,18 @@ void process(Mat* frame, Background* background) {
     Mat* threshold_frame = new Mat(frame->size(), CV_8UC1);
     Filters::Threshold(threshold_frame, difference_frame, pixel_threshold_value);
 
+    //Use a closing filter so that moving regions get filled (remove non-movement pixels from inside)
+    Mat* closing_frame = new Mat(frame->size(), CV_8UC1);
+    Filters::Closing(closing_frame, threshold_frame, 8);
+
+    // Detect blobs.
+/*  std::vector<KeyPoint> keypoints;
+    detector.detect(*closing_frame, keypoints);
+    Mat * keypoints_frame = new Mat(frame->size(), CV_8UC1);
+    drawKeypoints(*closing_frame, keypoints, *keypoints_frame, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );*/
+
     Mat* block_movements_frame = new Mat(frame->size(), CV_8UC1);
-    Filters::BinaryBlocks(block_movements_frame, threshold_frame, block_size, 6);
+    Filters::BinaryBlocks(block_movements_frame, closing_frame, block_size, 2);
 
     Filters::HighlightMask(frame, block_movements_frame, SEE_BACK_);
 
@@ -52,6 +64,7 @@ void process(Mat* frame, Background* background) {
     luma_frame->release();
     difference_frame->release();
     threshold_frame->release();
+    closing_frame->release();
     block_movements_frame->release();
 }
 
@@ -125,7 +138,8 @@ void block(Mat *frame, int h, int w, int thresh) {
  *
  */
 int main(int argc, char** argv) {
-    String input_file = "input.mp4", output_file = "grayscaleVid.avi";
+    String input_file = "input.mp4", output_file = "output.avi", background_file = "background.avi";
+
     /* Args:
      * 1 - Threshold
      * 2 - input file
@@ -151,8 +165,10 @@ int main(int argc, char** argv) {
     first_frame->release();
 
     Background* background = new Background(background_frame);
-    VideoWriter output_video (output_file, VideoWriter::fourcc('M','P','E','G'), 30,
+    VideoWriter output_video(output_file, VideoWriter::fourcc('M','P','E','G'), 30,
                               Size(background_frame->size().width,background_frame->size().height), 1);
+    VideoWriter background_video(background_file, VideoWriter::fourcc('M','P','E','G'), 30,
+                                 Size(background_frame->size().width,background_frame->size().height), 0);
 
     int frame_count = (int)input_video.get(CV_CAP_PROP_FRAME_COUNT);
     Mat* current_frame = new Mat();
@@ -163,8 +179,10 @@ int main(int argc, char** argv) {
             process(current_frame, background);
             //block(current_frame, 10, background);
         }
+        background_video << *(background->background_frame);
         output_video << *current_frame;
     }
+
     return 0;
 }
 

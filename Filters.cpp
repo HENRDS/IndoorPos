@@ -52,7 +52,7 @@ void Filters::Threshold(Mat* output, Mat* input, uchar threshold) {
     }
 }
 
-const double MOVING_AVERAGE_FILTER_ALPHA = 0.05;
+const double MOVING_AVERAGE_FILTER_ALPHA = 0.2;
 uchar Filters::MovingAverage(uchar previousAverage, uchar currentPixel) {
     return MOVING_AVERAGE_FILTER_ALPHA * currentPixel + (1 - MOVING_AVERAGE_FILTER_ALPHA) * previousAverage;
 }
@@ -113,6 +113,11 @@ void Filters::HighlightMask(Mat *output, Mat *mask, bool keep_back){
             }
         }
     }
+}
+
+void Filters::Closing(Mat* output, Mat* input, int size){
+    //TODO - Filtro ainda não implementado - utilizando versão OpenCV
+    morphologyEx(*input, *output, MORPH_CLOSE, getStructuringElement(MORPH_RECT,Size(size,size)));
 }
 
 const double PI = 3.14159265359;

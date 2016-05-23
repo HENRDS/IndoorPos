@@ -47,13 +47,17 @@ void Background::calculateMask(Mat* output) {
         }
     }
 
+    Mat* closing_frame = new Mat(last_frames[0]->size(), CV_8UC1);
+    Filters::Closing(closing_frame, movement_mask, 8);
+
     //Generate the block version of the movement mask
-    Filters::BinaryBlocks(output, movement_mask, 16, 6);
+    Filters::BinaryBlocks(output, closing_frame, 8, 2);
 
     //Free resources
     abs_frame_minus1->release();
     abs_frame_minus2->release();
     movement_mask->release();
+    closing_frame->release();
 }
 
 void Background::updateBackground(Mat* input) {
@@ -74,6 +78,10 @@ void Background::updateBackground(Mat* input) {
                                                                          last_frames[0]->at<uchar>(i,j));
         }
     }
+
+    /*namedWindow("Display Image", WINDOW_AUTOSIZE );
+    imshow("Display Image", *background_frame);
+    waitKey(0);*/
 
     //Free resources
     mask->release();
