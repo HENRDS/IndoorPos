@@ -126,7 +126,7 @@ void block(Mat *frame, int h, int w, int thresh) {
  */
 int main(int argc, char** argv) {
     String input_file = "input_2.mp4", output_file = "output.avi", background_file = "background.avi";
-
+    int fps;
     /* Args:
      * 1 - Threshold
      * 2 - input file
@@ -150,11 +150,11 @@ int main(int argc, char** argv) {
     Mat* background_frame = new Mat(first_frame->size(), CV_8UC1);
     Filters::Luminance(background_frame, first_frame);
     first_frame->release();
-
+    fps = (int)input_video.get(CV_CAP_PROP_FPS);
     Background* background = new Background(background_frame);
-    VideoWriter output_video(output_file, VideoWriter::fourcc('M','P','E','G'), 30,
+    VideoWriter output_video(output_file, VideoWriter::fourcc('M','P','E','G'), fps,
                               Size(background_frame->size().width,background_frame->size().height), 1);
-    VideoWriter background_video(background_file, VideoWriter::fourcc('M','P','E','G'), 30,
+    VideoWriter background_video(background_file, VideoWriter::fourcc('M','P','E','G'), fps,
                                  Size(background_frame->size().width,background_frame->size().height), 0);
 
     int frame_count = (int)input_video.get(CV_CAP_PROP_FRAME_COUNT);
