@@ -1,3 +1,0 @@
-/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/CMakeFiles/rebuild_cache.dir
-/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/CMakeFiles/edit_cache.dir
-/media/henry/Files/Henry/INE5435/project/Model/IndoorPos/CMakeFiles/main.dir

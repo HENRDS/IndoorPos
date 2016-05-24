@@ -14,15 +14,10 @@
 #include "opencv2/opencv.hpp"
 #include "Filters.h"
 #include "Background.h"
+#include "Settings.h"
 
 using namespace cv;
 
-//Set the threshold used by the threshold filter based on the input arguments
-int pixel_threshold_value = 40;
-// Block size MUST be some n where n = 2^k
-int block_size = 4;
-// Enable background in output
-bool SEE_BACK_ = true;
 // Set up the detector with default parameters.
 SimpleBlobDetector detector;
 
@@ -31,23 +26,20 @@ SimpleBlobDetector detector;
  */
 void process(Mat* frame, Background* background) {
     //Obtain the luma version of the current frame
-    Mat* luma_frame = new Mat(frame->size(), CV_8UC1);
-    Filters::Luminance(luma_frame, frame);
+    Mat* filter_frame = new Mat(frame->size(), CV_8UC1);
+    Filters::Luminance(filter_frame, frame);
 
     //Update the background based on information from the current frame
-    background->updateBackground(luma_frame);
+    background->updateBackground(filter_frame);
 
     //Obtain the difference of the current frame and the background.
-    Mat* difference_frame = new Mat(frame->size(), CV_8UC1);
-    Filters::AbsoluteDifference(difference_frame, luma_frame, background->background_frame);
+    Filters::AbsoluteDifference(filter_frame, filter_frame, background->background_frame);
 
     //Keep only the differences above the threshold value
-    Mat* threshold_frame = new Mat(frame->size(), CV_8UC1);
-    Filters::Threshold(threshold_frame, difference_frame, pixel_threshold_value);
+    Filters::Threshold(filter_frame, filter_frame, Settings::DIFFERENCE_THRESHOLD);
 
     //Use a closing filter so that moving regions get filled (remove non-movement pixels from inside)
-    Mat* closing_frame = new Mat(frame->size(), CV_8UC1);
-    Filters::Closing(closing_frame, threshold_frame, 8);
+    Filters::Closing(filter_frame, filter_frame, Settings::KERNEL_SIZE);
 
     // Detect blobs.
 /*  std::vector<KeyPoint> keypoints;
@@ -55,17 +47,12 @@ void process(Mat* frame, Background* background) {
     Mat * keypoints_frame = new Mat(frame->size(), CV_8UC1);
     drawKeypoints(*closing_frame, keypoints, *keypoints_frame, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );*/
 
-    Mat* block_movements_frame = new Mat(frame->size(), CV_8UC1);
-    Filters::BinaryBlocks(block_movements_frame, closing_frame, block_size, 2);
+    Filters::BinaryBlocks(filter_frame, filter_frame, Settings::BLOCK_SIZE, Settings::BLOCK_THRESHOLD);
 
-    Filters::HighlightMask(frame, block_movements_frame, SEE_BACK_);
+    Filters::HighlightMask(frame, filter_frame, Settings::SEE_BACK);
 
     //Free resources
-    luma_frame->release();
-    difference_frame->release();
-    threshold_frame->release();
-    closing_frame->release();
-    block_movements_frame->release();
+    filter_frame->release();
 }
 
 void processPixel(Vec3b *pixel, uchar *background)
@@ -74,7 +61,7 @@ void processPixel(Vec3b *pixel, uchar *background)
     uchar pixel_grayscale = Filters::Luminance(*pixel);
     //Obtain the difference of the current frame and the background.
     uchar pixel_difference = Filters::AbsoluteDifference(*background, pixel_grayscale);
-    uchar pixel_threshold = Filters::Threshold(pixel_difference, pixel_threshold_value);
+    uchar pixel_threshold = Filters::Threshold(pixel_difference, Settings::DIFFERENCE_THRESHOLD);
     //Update the background with information from the current frame using a moving average filter.
     (*background) = Filters::MovingAverage(*background, pixel_grayscale);
     //Set the original RGB representation of the frame to grayscale by copying the grayscale value to each
@@ -124,12 +111,12 @@ void processBlock(Mat *frame, int x, int y, int sz, int thresh) {
 }
 
 void block(Mat *frame, int h, int w, int thresh) {
-    int shift = (int) log2((double)block_size);
+    int shift = (int) log2((double)Settings::BLOCK_SIZE);
     int vB = (h >> shift), hB = (w >> shift);
 
     for (int i = 0; i < vB; ++i) {
         for (int j = 0; j < hB; ++j) {
-            processBlock(frame, j * block_size, i * block_size, block_size, thresh);
+            processBlock(frame, j * Settings::BLOCK_SIZE, i * Settings::BLOCK_SIZE, Settings::BLOCK_SIZE, thresh);
         }
     }
 }
@@ -138,7 +125,7 @@ void block(Mat *frame, int h, int w, int thresh) {
  *
  */
 int main(int argc, char** argv) {
-    String input_file = "input.mp4", output_file = "output.avi", background_file = "background.avi";
+    String input_file = "input_2.mp4", output_file = "output.avi", background_file = "background.avi";
 
     /* Args:
      * 1 - Threshold
@@ -148,7 +135,7 @@ int main(int argc, char** argv) {
     {
         case 4: output_file = argv[3];
         case 3: input_file = argv[2];
-        case 2: pixel_threshold_value = atoi(argv[1]); break;
+        //case 2: Settings::difference_threshold = atoi(argv[1]); break;
     };
 
     //Load the video file from disk

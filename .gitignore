@@ -1,0 +1,6 @@
+CMakeFiles
+.idea
+build
+*.mpeg
+*.avi
+*.mp4

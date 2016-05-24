@@ -61,7 +61,7 @@ void Filters::BinaryBlocks(Mat* output, Mat* input, int block_size, int threshol
     int frame_height = input->size().height;
     int frame_width = input->size().width;
 
-    //Since the block_size must be power of 2, it is possible to divide only by executing shifts
+    //Since the BLOCK_SIZE must be power of 2, it is possible to divide only by executing shifts
     int log2_block_size = (int) log2((double)block_size);
     int vertical_blocks = (frame_height >> log2_block_size);
     int horizontal_blocks = (frame_width >> log2_block_size);
@@ -102,9 +102,8 @@ void Filters::HighlightMask(Mat *output, Mat *mask, bool keep_back){
 
             if (keep_back) {
                 if (tresh_pixel == (uchar) 255) {
-                    output->at<Vec3b>(i, j)(0) = (uchar)0;
-                    output->at<Vec3b>(i, j)(1) = (uchar)0;
-                    output->at<Vec3b>(i, j)(2) = (uchar)255;
+                    output->at<Vec3b>(i, j)(0) = (uchar)255;
+                    output->at<Vec3b>(i, j)(1) = (uchar)255;
                 }
             } else {
                 output->at<Vec3b>(i, j)(0) = tresh_pixel == (uchar) 255 ? (uchar)0 : 0;

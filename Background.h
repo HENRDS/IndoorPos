@@ -8,6 +8,7 @@
 #include "opencv2/opencv.hpp"
 #include "Filters.h"
 #include "Support.h"
+#include "Settings.h"
 
 using namespace cv;
 

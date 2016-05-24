@@ -14,6 +14,7 @@ public:
      * Convert a RGB pixel to grayscale by obtaining the average between its components.
      * Mat input type - CV_8UC3
      * Mat output type - CV_8UC1
+     * Can be done in place!
      */
     static uchar Grayscale(Vec3b &pixel);
     static void Grayscale(Mat* output, Mat* input);
@@ -22,18 +23,21 @@ public:
      * Luminance = 0.2989*RED + 0.5870*GREEN + 0.1140*BLUE
      * Mat input type - CV_8UC3
      * Mat output type - CV_8UC1
+     * Can be done in place!
      */
     static uchar Luminance(Vec3b &pixel);
     static void Luminance(Mat* output, Mat* input);
     /**
      * Obtain the absolute difference between two grayscale pixels.
      * Mat type - CV_8UC1
+     * Can be done in place!
      */
     static uchar AbsoluteDifference(uchar referencePixel, uchar pixel);
     static void AbsoluteDifference(Mat* output, Mat* frame_a, Mat* frame_b);
     /**
      * Set a pixel to either black or white, depending whether it is below or above a threshold.
      * Mat type - CV_8UC1
+     * Can be done in place!
      */
     static uchar Threshold(uchar pixel, uchar threshold);
     static void Threshold(Mat* output, Mat* input, uchar threshold);
@@ -47,6 +51,7 @@ public:
     static Mat GaussianBlur(Mat &frame, int radius);
     /**
      * Mat type - CV_8UC1
+     * Can be done in place!
      */
     static void BinaryBlocks(Mat* output, Mat* input, int block_size, int threshold);
     /**
