@@ -114,9 +114,66 @@ void Filters::HighlightMask(Mat *output, Mat *mask, bool keep_back){
     }
 }
 
-void Filters::Closing(Mat* output, Mat* input, int size){
+void Filters::HighlightBlobMask(Mat* output, Mat* blob_input, Mat* luma_input) {
+    for (int i = 0; i < blob_input->size().height; i++) {
+        for (int j = 0; j < blob_input->size().width; j++) {
+            if (blob_input->at<Vec3b>(i, j)(2) == 0) {
+                //Highlight the black parts from the mask in the output - only testing for the RED component
+                output->at<Vec3b>(i, j)(0) = luma_input->at<uchar>(i, j);
+                output->at<Vec3b>(i, j)(1) = 255;
+                output->at<Vec3b>(i, j)(2) = luma_input->at<uchar>(i, j);
+            } else if (blob_input->at<Vec3b>(i, j)(2) != 0 && blob_input->at<Vec3b>(i, j)(1) == 0) {
+                //Highlight the blob circles
+                //verify if RED component is 255 and others 0 ( only needed to verify one of them )
+                output->at<Vec3b>(i, j)(0) = 0;
+                output->at<Vec3b>(i, j)(1) = 0;
+                output->at<Vec3b>(i, j)(2) = 255;
+            } else {
+                output->at<Vec3b>(i, j)(0) = luma_input->at<uchar>(i, j);
+                output->at<Vec3b>(i, j)(1) = luma_input->at<uchar>(i, j);
+                output->at<Vec3b>(i, j)(2) = luma_input->at<uchar>(i, j);
+            }
+        }
+    }
+}
+
+void Filters::Closing(Mat* output, Mat* input, int size, int iterations){
     //TODO - Filtro ainda não implementado - utilizando versão OpenCV
-    morphologyEx(*input, *output, MORPH_CLOSE, getStructuringElement(MORPH_RECT,Size(size,size)));
+    morphologyEx(*input, *output, MORPH_CLOSE, getStructuringElement(MORPH_RECT,Size(size,size)), Point(-1,-1), iterations);
+}
+
+void Filters::Opening(Mat* output, Mat* input, int size, int iterations){
+    //TODO - Filtro ainda não implementado - utilizando versão OpenCV
+    morphologyEx(*input, *output, MORPH_OPEN, getStructuringElement(MORPH_RECT,Size(size,size)), Point(-1,-1), iterations);
+}
+
+
+void Filters::RGB(Mat* output, Mat* input) {
+    for (int i = 0; i < input->size().height; i++) {
+        for (int j = 0; j < input->size().width; j++) {
+            output->at<Vec3b>(i, j)(0) = input->at<uchar>(i, j);
+            output->at<Vec3b>(i, j)(1) = input->at<uchar>(i, j);
+            output->at<Vec3b>(i, j)(2) = input->at<uchar>(i, j);
+        }
+    }
+}
+
+void Filters::BlobDetector(Mat* output, Mat* input) {
+    //TODO - Filtro ainda não implementado - utilizando versão OpenCV
+    // Setup SimpleBlobDetector parameters.
+    SimpleBlobDetector::Params params;
+    params.minDistBetweenBlobs = 10;
+    params.filterByArea = true;
+    params.minArea = 5000;
+    params.maxArea = 1000000;
+    params.filterByCircularity = false;
+    params.filterByConvexity = false;
+    params.filterByInertia = false;
+
+    Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
+    std::vector<KeyPoint> keypoints;
+    detector->detect(*input, keypoints);
+    drawKeypoints(*input, keypoints, *output, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
 }
 
 const double PI = 3.14159265359;
@@ -149,6 +206,8 @@ Mat Filters::GaussianBlur(Mat &frame, int radius) {
     return *res;
 }
 
+
+
 //inline uchar avg (uchar * vec) {
 //    return (*vec + *(vec+1) + *(vec+2)) / 3;
 //}
@@ -168,8 +227,3 @@ Mat Filters::GaussianBlur(Mat &frame, int radius) {
 //    }
 //    return result;
 //}
-
-/**
- *
- */
-void BoxBlurFilter() { }

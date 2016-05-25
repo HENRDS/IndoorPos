@@ -57,11 +57,21 @@ public:
     /**
      *
      */
-     static void HighlightMask(Mat *output, Mat *mask, bool keep_back);
+    static void HighlightMask(Mat *output, Mat *mask, bool keep_back);
+    static void HighlightBlobMask(Mat* output, Mat* blob_input, Mat* luma_input);
     /**
      *
      */
-    static void Closing(Mat* output, Mat* input, int size);
+    static void Closing(Mat* output, Mat* input, int size, int iterations);
+    static void Opening(Mat* output, Mat* input, int size, int iterations);
+    /**
+     *
+     */
+    static void RGB(Mat* output, Mat* input);
+    /*
+     *
+     */
+    static void BlobDetector(Mat* output, Mat* input);
 };
 
 

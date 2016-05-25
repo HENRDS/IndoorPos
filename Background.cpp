@@ -46,7 +46,7 @@ void Background::calculateMask(Mat* output) {
         }
     }
 
-    Filters::Closing(output, output, Settings::KERNEL_SIZE);
+    Filters::Closing(output, output, Settings::KERNEL_SIZE, Settings::BACK_ITERATIONS);
 
     //Generate the block version of the movement mask
     Filters::BinaryBlocks(output, output, Settings::BLOCK_SIZE, Settings::BLOCK_THRESHOLD);

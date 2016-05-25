@@ -18,41 +18,50 @@
 
 using namespace cv;
 
-// Set up the detector with default parameters.
-SimpleBlobDetector detector;
-
 /**
  *
  */
 void process(Mat* frame, Background* background) {
     //Obtain the luma version of the current frame
-    Mat* filter_frame = new Mat(frame->size(), CV_8UC1);
-    Filters::Luminance(filter_frame, frame);
-
+    Mat* luma_frame = new Mat(frame->size(), CV_8UC1);
+    Filters::Luminance(luma_frame, frame);
+    
     //Update the background based on information from the current frame
-    background->updateBackground(filter_frame);
+    background->updateBackground(luma_frame);
 
     //Obtain the difference of the current frame and the background.
-    Filters::AbsoluteDifference(filter_frame, filter_frame, background->background_frame);
+    Mat* movement_frame = new Mat(frame->size(), CV_8UC1);
+    Filters::AbsoluteDifference(movement_frame, luma_frame, background->background_frame);
 
     //Keep only the differences above the threshold value
-    Filters::Threshold(filter_frame, filter_frame, Settings::DIFFERENCE_THRESHOLD);
+    Filters::Threshold(movement_frame, movement_frame, Settings::DIFFERENCE_THRESHOLD);
 
     //Use a closing filter so that moving regions get filled (remove non-movement pixels from inside)
-    Filters::Closing(filter_frame, filter_frame, Settings::KERNEL_SIZE);
+    Filters::Closing(movement_frame, movement_frame, Settings::KERNEL_SIZE, Settings::MOV_ITERATIONS);
 
-    // Detect blobs.
-/*  std::vector<KeyPoint> keypoints;
-    detector.detect(*closing_frame, keypoints);
-    Mat * keypoints_frame = new Mat(frame->size(), CV_8UC1);
-    drawKeypoints(*closing_frame, keypoints, *keypoints_frame, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );*/
+    //Pixelize moving areas
+    Filters::BinaryBlocks(movement_frame, movement_frame, Settings::BLOCK_SIZE, Settings::BLOCK_THRESHOLD);
 
-    Filters::BinaryBlocks(filter_frame, filter_frame, Settings::BLOCK_SIZE, Settings::BLOCK_THRESHOLD);
+    //Invert black-white color -- necessary for blob detection
+    subtract(Scalar::all(255),*movement_frame,*movement_frame);
 
-    Filters::HighlightMask(frame, filter_frame, Settings::SEE_BACK);
+    //Detect blobs
+    Mat* blob_frame = new Mat(frame->size(), CV_8UC3);
+    Filters::BlobDetector(blob_frame, movement_frame);
+
+/*  namedWindow("Display Image", WINDOW_AUTOSIZE );
+    imshow("Display Image", *blob_frame);
+    waitKey(0);*/
+
+    Filters::HighlightBlobMask(frame, blob_frame, luma_frame);
+
+/*  imshow("Display Image", *frame);
+    waitKey(0);*/
 
     //Free resources
-    filter_frame->release();
+    movement_frame->release();
+    luma_frame->release();
+    blob_frame->release();
 }
 
 void processPixel(Vec3b *pixel, uchar *background)
@@ -125,7 +134,7 @@ void block(Mat *frame, int h, int w, int thresh) {
  *
  */
 int main(int argc, char** argv) {
-    String input_file = "input_2.mp4", output_file = "output.avi", background_file = "background.avi";
+    String input_file = "input.mp4", output_file = "output.avi", background_file = "background.avi";
     int fps;
     /* Args:
      * 1 - Threshold
