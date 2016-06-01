@@ -4,7 +4,7 @@
 
 #ifndef INDOORPOS_SETTINGS_H
 #define INDOORPOS_SETTINGS_H
-
+#define REDUCED_FRAME_RATE
 class Settings {
 public:
     //Difference Filter
@@ -12,7 +12,7 @@ public:
     //Closing Filter
     static const int KERNEL_SIZE = 8;
     //Block Filter
-    static const int BLOCK_SIZE = 8; // MUST be some n where n = 2^k
+    static const int BLOCK_SIZE = 16; // MUST be some n where n = 2^k
     static const int BLOCK_THRESHOLD = 6;
     //Highlight Filter
     static const bool SEE_BACK = true; // Enable background in output

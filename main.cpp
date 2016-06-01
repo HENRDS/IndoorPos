@@ -128,14 +128,12 @@ int main(int argc, char** argv) {
     String input_file = "input_2.mp4", output_file = "output.avi", background_file = "background.avi";
     int fps;
     /* Args:
-     * 1 - Threshold
      * 2 - input file
      * 3 - output file*/
     switch (argc)
     {
-        case 4: output_file = argv[3];
-        case 3: input_file = argv[2];
-        //case 2: Settings::difference_threshold = atoi(argv[1]); break;
+        case 3: output_file = argv[2];
+        case 2: input_file = argv[1];
     };
 
     //Load the video file from disk
@@ -151,23 +149,39 @@ int main(int argc, char** argv) {
     Filters::Luminance(background_frame, first_frame);
     first_frame->release();
     fps = (int)input_video.get(CV_CAP_PROP_FPS);
+#ifdef  REDUCED_FRAME_RATE
+    int outFps = 2;
+#else
+    int outFps = fps;
+#endif
     Background* background = new Background(background_frame);
-    VideoWriter output_video(output_file, VideoWriter::fourcc('M','P','E','G'), fps,
+    VideoWriter output_video(output_file, VideoWriter::fourcc('M','P','E','G'), outFps,
                               Size(background_frame->size().width,background_frame->size().height), 1);
-    VideoWriter background_video(background_file, VideoWriter::fourcc('M','P','E','G'), fps,
+    VideoWriter background_video(background_file, VideoWriter::fourcc('M','P','E','G'), outFps,
                                  Size(background_frame->size().width,background_frame->size().height), 0);
 
     int frame_count = (int)input_video.get(CV_CAP_PROP_FRAME_COUNT);
     Mat* current_frame = new Mat();
     std::cout << "Starting... " << frame_count << " frames to go"<< std::endl;
     for (int i = 0; i < frame_count - 1; i++) {
-        if (i % 3 == 0) {
+#ifdef REDUCED_FRAME_RATE
+        if ((i % fps) < outFps) {
+#endif
             input_video.read(*current_frame);
             process(current_frame, background);
             //block(current_frame, 10, background);
+
+#ifdef REDUCED_FRAME_RATE
+            background_video << *(background->background_frame);
+            output_video << *current_frame;
+        }
+#else
         }
         background_video << *(background->background_frame);
         output_video << *current_frame;
+#endif
+
+
     }
 
     return 0;

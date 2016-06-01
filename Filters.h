@@ -6,6 +6,7 @@
 #define INDOORPOS_FILTERS_H
 
 #include "opencv2/opencv.hpp"
+
 using namespace cv;
 
 class Filters {

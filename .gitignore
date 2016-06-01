@@ -4,3 +4,7 @@ build
 *.mpeg
 *.avi
 *.mp4
+bin
+Resources
+run
+setup
