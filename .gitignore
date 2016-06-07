@@ -1,4 +1,6 @@
+CMakeCache.txt
 CMakeFiles
+*.cmake
 .idea
 build
 *.mpeg
@@ -8,3 +10,5 @@ bin
 Resources
 run
 setup
+Makefile
+main
