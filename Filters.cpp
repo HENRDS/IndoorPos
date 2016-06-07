@@ -71,24 +71,23 @@ void Filters::BinaryBlocks(Mat* output, Mat* input, int block_size, int threshol
         for (int j_block = 0; j_block < horizontal_blocks; j_block++){
 
             int modified_pixels = 0;
-            int block_origin_i = i_block*block_size;
-            int block_origin_j = j_block*block_size;
+            int block_origin_i = i_block * block_size;
+            int block_origin_j = j_block * block_size;
 
             //Count the number of pixels in the block with color 255
             for (int i_pixel = 0; i_pixel < block_size; i_pixel++) {
                 for (int j_pixel = 0; j_pixel < block_size; j_pixel++) {
-                    if (input->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) == 255)
-                        modified_pixels++;
+                    // if current pixel == 255 then 11111111 & 00000001 = 1
+                    // if current pixel == 0 then   00000000 & 00000001 = 0
+                    modified_pixels+= input->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel)  & 0x01;
                 }
             }
+            uchar color = (uchar)(modified_pixels > threshold ? 255 : 0);
 
             //If the number is above a threshold, set all the other pixels also to 255
             for (int i_pixel = 0; i_pixel < block_size; i_pixel++) {
                 for (int j_pixel = 0; j_pixel < block_size; j_pixel++) {
-                    if (modified_pixels > threshold)
-                        output->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) = 255;
-                    else
-                        output->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) = 0;
+                    output->at<uchar>(block_origin_i + i_pixel, block_origin_j + j_pixel) = color;
                 }
             }
         }
@@ -96,19 +95,19 @@ void Filters::BinaryBlocks(Mat* output, Mat* input, int block_size, int threshol
 }
 
 void Filters::HighlightMask(Mat *output, Mat *mask, bool keep_back){
+    Vec3b * pix;
     for (int i = 0; i < mask->size().height; i++) {
         for (int j = 0; j < mask->size().width; j++) {
             uchar tresh_pixel = mask->at<uchar>(i, j);
-
+            pix = &output->at<Vec3b>(i, j);
             if (keep_back) {
                 if (tresh_pixel == (uchar) 255) {
-                    output->at<Vec3b>(i, j)(0) = (uchar)255;
-                    output->at<Vec3b>(i, j)(1) = (uchar)255;
+                    (*pix)(2) = (uchar)255;
                 }
             } else {
-                output->at<Vec3b>(i, j)(0) = tresh_pixel == (uchar) 255 ? (uchar)0 : 0;
-                output->at<Vec3b>(i, j)(1) = tresh_pixel == (uchar) 255 ? (uchar)0 : 0;
-                output->at<Vec3b>(i, j)(2) = tresh_pixel == (uchar) 255 ? (uchar)255 : 0;
+                (*pix)(0) = (uchar)0;
+                (*pix)(1) = (uchar)0;
+                (*pix)(2) = tresh_pixel == (uchar) 255 ? (uchar)255 : 0;
             }
         }
     }
