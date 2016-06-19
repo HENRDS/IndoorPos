@@ -114,23 +114,27 @@ void Filters::HighlightMask(Mat *output, Mat *mask, bool keep_back){
 }
 
 void Filters::HighlightBlobMask(Mat* output, Mat* blob_input, Mat* luma_input) {
-    for (int i = 0; i < blob_input->size().height; i++) {
+    Vec3b *blob;
+    Vec3b *out;
+    for (int i = 0; i < blob_input->rows; i++) {
+        out= output->ptr<Vec3b>(i);
+        blob= blob_input->ptr<Vec3b>(i);
         for (int j = 0; j < blob_input->size().width; j++) {
-            if (blob_input->at<Vec3b>(i, j)(2) == 0) {
+            if (blob[j](2) == 0) {
                 //Highlight the black parts from the mask in the output - only testing for the RED component
-                output->at<Vec3b>(i, j)(0) = luma_input->at<uchar>(i, j);
-                output->at<Vec3b>(i, j)(1) = 255;
-                output->at<Vec3b>(i, j)(2) = luma_input->at<uchar>(i, j);
-            } else if (blob_input->at<Vec3b>(i, j)(2) != 0 && blob_input->at<Vec3b>(i, j)(1) == 0) {
+                out[j](0) = luma_input->at<uchar>(i, j);
+                out[j](1) = 255;
+                out[j](2) = luma_input->at<uchar>(i, j);
+            } else if (blob[j](2) != 0 && blob[j](1) == 0) {
                 //Highlight the blob circles
                 //verify if RED component is 255 and others 0 ( only needed to verify one of them )
-                output->at<Vec3b>(i, j)(0) = 0;
-                output->at<Vec3b>(i, j)(1) = 0;
-                output->at<Vec3b>(i, j)(2) = 255;
+                out[j](0) = 0;
+                out[j](1) = 0;
+                out[j](2) = 255;
             } else {
-                output->at<Vec3b>(i, j)(0) = luma_input->at<uchar>(i, j);
-                output->at<Vec3b>(i, j)(1) = luma_input->at<uchar>(i, j);
-                output->at<Vec3b>(i, j)(2) = luma_input->at<uchar>(i, j);
+                out[j](0) = luma_input->at<uchar>(i, j);
+                out[j](1) = luma_input->at<uchar>(i, j);
+                out[j](2) = luma_input->at<uchar>(i, j);
             }
         }
     }
