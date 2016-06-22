@@ -4,22 +4,18 @@
 
 #ifndef INDOORPOS_PERFORMANCE_H
 #define INDOORPOS_PERFORMANCE_H
-#include "Settings.h"
+#include <stdlib.h>
+#include <ctime>
 #include "opencv2/opencv.hpp"
+#include "Settings.h"
 using namespace cv;
-class FastAsFuck {
-public:
-    static inline uint countChanged(Mat* input);
-    static void BinaryBlocks(Mat& frame);
-
-};
-class ParallelMatBlock : public ParallelLoopBody
-{
+using namespace std;
+class Block_Processor {
 private:
-    Mat* mat;
+    static void process(Mat* roi);
 public:
-    ParallelMatBlock(Mat* mat, uchar color): mat(mat) { }
-
-    void operator ()(const Range& range) const;
+    static void BinaryBlocks(Mat& frame);
 };
+
+void morph(const _InputOutputArray &frame, int op, int iters);
 #endif //INDOORPOS_PERFORMANCE_H

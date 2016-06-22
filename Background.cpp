@@ -4,82 +4,73 @@
 
 #include "Background.h"
 
-Background::Background(Mat* input) {
-    background_frame = new Mat();
-    input->copyTo(*background_frame);
-
+Background::Background(InputArray input) {
+    Mat _back = input.getMat();
+    _back.copyTo(this->background_frame);
     for (int i = 0; i < 3; i++) {
-        last_frames[i] = new Mat();
-        input->copyTo(*last_frames[i]);
+        last_frames[i] = new Mat(_back.size(), CV_8UC1);
+        _back.copyTo(*last_frames[i]);
     }
 }
+double Background::processTminus(int minus, const _OutputArray &output) {
+    Mat *current = last_frames[0], *previous= last_frames[minus];
+    Mat oMat(current->size(), CV_8UC1);
+    absdiff(*current, *previous, oMat);
+    Scalar _mean, _stdDev;
+    meanStdDev(oMat, _mean, _stdDev);
+    output.create(oMat.size(), CV_8UC1);
+    oMat.copyTo(output);
+    return _mean[0] + _stdDev[0];
+}
 
-void Background::calculateMask(Mat* output) {
-    //Generate a matrix of absolute differences between frame in t and in (t-1)
-    Mat* abs_frame_minus1 = new Mat(last_frames[0]->size(), CV_8UC1);
-    Filters::AbsoluteDifference(abs_frame_minus1, last_frames[0], last_frames[1]);
-
-    //Generate a matrix of absolute differences between frame in t and in (t-2)
-    Mat* abs_frame_minus2 = new Mat(last_frames[0]->size(), CV_8UC1);
-    Filters::AbsoluteDifference(abs_frame_minus2, last_frames[0], last_frames[2]);
-
-    //Get the mean value from the absolute differences between frame in t and in (t-1)
-    double mean_frame_minus1 = Support::Mean(abs_frame_minus1);
-
-    //Get the mean value from the absolute differences between frame in t and in (t-2)
-    double mean_frame_minus2 = Support::Mean(abs_frame_minus2);
-
-    //Get the standard deviation of absolute differences between frame in t and in (t-1)
-    double std_deviation_frame_minus1 = Support::StandardDeviation(abs_frame_minus1, mean_frame_minus1);
-
-    //Get the standard deviation of absolute differences between frame in t and in (t-2)
-    double std_deviation_frame_minus2 = Support::StandardDeviation(abs_frame_minus2, mean_frame_minus2);
-
-    //Create a mask identifying pixels with movement based on their difference(mean + std deviation) from last frames
-    for (int i = 0; i < last_frames[0]->size().height; i++) {
-        for (int j = 0; j < last_frames[0]->size().width; j++) {
-            if ((abs_frame_minus1->at<uchar>(i,j) >= mean_frame_minus1 + std_deviation_frame_minus1) &&
-                (abs_frame_minus2->at<uchar>(i,j) >= mean_frame_minus2 + std_deviation_frame_minus2))
-                output->at<uchar>(i,j) = 255;
+void Background::calculateMask(InputOutputArray mask) {
+    Mat iMat = mask.getMat();
+    Mat tMinus1, tMinus2;
+    double max1 = processTminus(1, tMinus1);
+    double max2 = processTminus(2, tMinus2);
+    uchar *p1, *p2;
+    for (int i = 0; i < last_frames[0]->rows; i++) {
+        p1= tMinus1.ptr<uchar>(i);
+        p2= tMinus2.ptr<uchar>(i);
+        for (int j = 0; j < last_frames[0]->cols; j++) {
+            if ((p1[j] >= max1 ) && (p2[j] >= max2 ))
+                iMat.at<uchar>(i,j) = 255;
             else
-                output->at<uchar>(i,j) = 0;
+                iMat.at<uchar>(i,j) = 0;
         }
     }
 
-    Filters::Closing(output, output, Settings::KERNEL_SIZE, Settings::BACK_ITERATIONS);
 
-    //Generate the block version of the movement mask
-    Filters::BinaryBlocks(output, output, Settings::BLOCK_SIZE, Settings::BLOCK_THRESHOLD);
-
-    //Free resources
-    abs_frame_minus1->release();
-    abs_frame_minus2->release();
+    morph(iMat, MORPH_DILATE, 8);
+    Block_Processor::BinaryBlocks(iMat);
 }
 
-void Background::updateBackground(Mat* input) {
-    //Update the pointers with the three last frames location
+inline void Background::push_frame_back(const Mat &frame) {
+    delete last_frames[2];
     last_frames[2] = last_frames[1];
     last_frames[1] = last_frames[0];
-    last_frames[0] = new Mat();
-    input->copyTo(*last_frames[0]);
+    last_frames[0] = new Mat(frame.size(), CV_8UC1);
+    frame.copyTo(*last_frames[0]);
+}
+uchar avg(uchar input1, uchar input2, double alpha) {
+    return (uchar)(input1*alpha + input2*(1-alpha));
+}
+void Background::updateBackground(InputArray input, OutputArray background) {
+    //Update the pointers with the three last frames location
+    Mat iMat = input.getMat();
+    push_frame_back(iMat);
 
-    Mat* mask = new Mat(last_frames[0]->size(), CV_8UC1);
+    Mat mask(last_frames[0]->size(), CV_8UC1);
     calculateMask(mask);
-
     //Only update the background with pixels from the current frame, if the pixels are not considered part of a movement.
-    for (int i = 0; i < last_frames[0]->size().height; i++) {
-        for (int j = 0; j < last_frames[0]->size().width; j++) {
-            if (mask->at<uchar>(i,j) == 0)
-                background_frame->at<uchar>(i,j) = Filters::MovingAverage(background_frame->at<uchar>(i,j),
-                                                                         last_frames[0]->at<uchar>(i,j));
+    uchar *p, *b;
+    for (int i = 0; i < last_frames[0]->rows; i++) {
+        p= mask.ptr<uchar>(i);
+        b = background_frame.ptr<uchar>(i);
+        for (int j = 0; j < last_frames[0]->cols; j++) {
+            if (!p[j])
+                b[j]= avg(b[j], last_frames[0]->at<uchar>(i,j), 0.2);
         }
     }
-
-    /*namedWindow("Display Image", WINDOW_AUTOSIZE );
-    imshow("Display Image", *background_frame);
-    waitKey(0);*/
-
-    //Free resources
-    mask->release();
-    last_frames[2]->release(); //not used anymore in the next iteration of the function
+    background_frame.copyTo(background);
 }

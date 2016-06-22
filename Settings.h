@@ -4,21 +4,28 @@
 
 #ifndef INDOORPOS_SETTINGS_H
 #define INDOORPOS_SETTINGS_H
-//#define REDUCED_FRAME_RATE
-#define SEE_BACKGROUND
-class Settings {
-public:
-    //Difference Filter
-    static const int DIFFERENCE_THRESHOLD = 70;
-    //Closing Filter
-    static const int KERNEL_SIZE = 16;
-    static const int BACK_ITERATIONS = 5;
-    static const int MOV_ITERATIONS = 4;
-    //Block Filter
-    static const int BLOCK_SIZE = 8; // MUST be some n where n = 2^k
-    static const int BLOCK_THRESHOLD = 6;
-    //Highlight Filter
+/* FLAGS */
+//#define SEE_BACKGROUND
+#define VERBOSE_
+//#define COUNT_TIME
 
-};
+/* VALUES */
+#define BLOCK_THRESH 8
+#define BLOCK_SIZE 8
+#define KERNEL_SIZE 8
+#define CLOSE_ITERS 6
+
+/* MACROS */
+#define __RECT_ARGS(x, y) (x*BLOCK_SIZE, y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+#define show(frame) imshow("Verbose", frame);\
+                    waitKey(1)
+#ifdef COUNT_TIME
+    #define IF_TIME(cmd) cmd
+#else
+    #define IF_TIME(cmd)
+#endif
+
+#define show_stop(frame) imshow("Verbose", frame);\
+                    waitKey(0)
 
 #endif //INDOORPOS_SETTINGS_H

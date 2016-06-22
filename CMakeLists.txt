@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 project( IndoorPos )
 find_package( OpenCV REQUIRED )
-add_executable( main main.cpp Background.cpp Background.h Filters.cpp Filters.h Support.cpp Support.h Settings.h performance.cpp Performance.h)
+add_executable( main main.cpp Background.cpp Background.h Settings.h performance.cpp Performance.h InPosProcess.cpp InPosProcess.h)
 target_link_libraries( main ${OpenCV_LIBS})
