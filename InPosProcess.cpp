@@ -31,7 +31,6 @@ void InPosProcess::process(const _OutputArray &output)
 
     this->_retrieve(mShow);
     cvtColor(mShow, frame, CV_RGB2GRAY);
-
     GaussianBlur(frame, frame, Size(21, 21), 0);
     this->background->updateBackground(frame, back);
     absdiff(frame, back, frame);
