@@ -12,7 +12,6 @@
  */
 
 #include "opencv2/opencv.hpp"
-#include <opencv2/highgui/highgui.hpp>
 #include "InPosProcess.h"
 
 using namespace cv;
@@ -20,25 +19,16 @@ using namespace std;
 
 int main(int argc, char** argv) {
     String input_file = "input.avi", output_file = "output.avi";
-    /* Args:
-     * 2 - input file
-     * 3 - output file*/
-    switch (argc) {
-        case 3:
-            output_file = argv[2];
-        case 2:
-            input_file = argv[1];
-    };
     InPosProcess proc(input_file);
     //Load the video file from disk
-    //VideoCapture input_video(input_file);
     Mat currentFrame;
     while (proc.getFrame(currentFrame))
 #ifndef SAVE_FILE
         ;
 #else
-
+    VideoWriter writer (output_file, VideoWriter::fourcc('M', 'P', 'E', 'G'), 10, Size(1280, 720), true);
 #endif
+
     /*Gather the information
     int fps = (int) input_video.get(CV_CAP_PROP_FPS);
     Size size((int)input_video.get(CV_CAP_PROP_FRAME_WIDTH), (int)input_video.get(CV_CAP_PROP_FRAME_HEIGHT));

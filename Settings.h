@@ -5,8 +5,8 @@
 #ifndef INDOORPOS_SETTINGS_H
 #define INDOORPOS_SETTINGS_H
 /* FLAGS */
-//#define SEE_BACKGROUND
-//#define COUNT_TIME
+#define SEE_BACKGROUND
+#define COUNT_TIME
 #define VERBOSE_
 
 /* VALUES */
