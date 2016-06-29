@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     Mat currentFrame;
     while (proc.getFrame(currentFrame))
 #ifndef SAVE_FILE
-        ;
+        ;//waitKey(2000);
 #else
     VideoWriter writer (output_file, VideoWriter::fourcc('M', 'P', 'E', 'G'), 10, Size(1280, 720), true);
 #endif

@@ -7,12 +7,15 @@
 
 #include "opencv2/opencv.hpp"
 #include "Performance.h"
+
 class Background {
 private:
 
-    Mat* last_frames[3];
+    Mat* last_frames[BACKGROUND_BUFFER_SIZE];
+
+
     double processTminus(int minus, OutputArray output);
-    void calculateMask(InputOutputArray mask);
+    void calculateMask(OutputArray mask);
     inline void push_frame_back(const Mat &frame);
 
 

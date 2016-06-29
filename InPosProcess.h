@@ -8,7 +8,7 @@
 #include "Background.h"
 class InPosProcess {
 private:
-    static const int DIFF_THRESHOLD = 30;
+
 
     VideoCapture* video;
     Background* background;
@@ -16,6 +16,11 @@ private:
     void process(OutputArray output);
     void _retrieve(OutputArray frame);
     int _detectBlobs(InputArray input, InputOutputArray output);
+#ifdef VERBOSE_
+    void _putTextOnOutput(InputOutputArray image, int people_cntif, int elapsed_secs);
+#endif
+    void _markEdges(InputOutputArray image);
+
 
 public:
     InPosProcess(String &filename);
