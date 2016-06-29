@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<system name="$${FILENAME}">
+ <component
+   name="$${FILENAME}"
+   displayName="$${FILENAME}"
+   version="1.0"
+   description=""
+   tags=""
+   categories="System" />
+ <parameter name="bonusData"><![CDATA[bonusData 
+{
+   element clk_0
+   {
+      datum _sortIndex
+      {
+         value = "0";
+         type = "int";
+      }
+   }
+   element st_sink_bfm_0
+   {
+      datum _sortIndex
+      {
+         value = "3";
+         type = "int";
+      }
+   }
+   element st_source_bfm_0
+   {
+      datum _sortIndex
+      {
+         value = "1";
+         type = "int";
+      }
+   }
+   element tb
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV GX";
+         type = "String";
+      }
+   }
+   element tb
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV GX";
+         type = "String";
+      }
+   }
+   element threshold_filter_0
+   {
+      datum _sortIndex
+      {
+         value = "2";
+         type = "int";
+      }
+   }
+}
+]]></parameter>
+ <parameter name="clockCrossingAdapter" value="HANDSHAKE" />
+ <parameter name="device" value="EP4SGX530KH40C4" />
+ <parameter name="deviceFamily" value="Stratix IV" />
+ <parameter name="deviceSpeedGrade" value="4" />
+ <parameter name="fabricMode" value="QSYS" />
+ <parameter name="generateLegacySim" value="false" />
+ <parameter name="generationId" value="0" />
+ <parameter name="globalResetBus" value="false" />
+ <parameter name="hdlLanguage" value="VERILOG" />
+ <parameter name="hideFromIPCatalog" value="false" />
+ <parameter name="lockedInterfaceDefinition" value="" />
+ <parameter name="maxAdditionalLatency" value="1" />
+ <parameter name="projectName" value="" />
+ <parameter name="sopcBorderPoints" value="false" />
+ <parameter name="systemHash" value="0" />
+ <parameter name="testBenchDutName" value="" />
+ <parameter name="timeStamp" value="0" />
+ <parameter name="useTestBenchNamingPattern" value="false" />
+ <instanceScript></instanceScript>
+ <interface name="clk" internal="clk_0.clk_in" type="clock" dir="end" />
+ <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
+ <module name="clk_0" kind="clock_source" version="16.0" enabled="1">
+  <parameter name="clockFrequency" value="50000000" />
+  <parameter name="clockFrequencyKnown" value="true" />
+  <parameter name="inputClockFrequency" value="0" />
+  <parameter name="resetSynchronousEdges" value="DEASSERT" />
+ </module>
+ <module
+   name="st_sink_bfm_0"
+   kind="altera_avalon_st_sink_bfm"
+   version="16.0"
+   enabled="1">
+  <parameter name="ST_BEATSPERCYCLE" value="1" />
+  <parameter name="ST_CHANNEL_W" value="1" />
+  <parameter name="ST_ERROR_DESCRIPTOR" value="" />
+  <parameter name="ST_ERROR_W" value="1" />
+  <parameter name="ST_MAX_CHANNELS" value="0" />
+  <parameter name="ST_NUMSYMBOLS" value="3" />
+  <parameter name="ST_READY_LATENCY" value="1" />
+  <parameter name="ST_SYMBOL_W" value="8" />
+  <parameter name="USE_CHANNEL" value="0" />
+  <parameter name="USE_EMPTY" value="0" />
+  <parameter name="USE_ERROR" value="0" />
+  <parameter name="USE_PACKET" value="1" />
+  <parameter name="USE_READY" value="1" />
+  <parameter name="USE_VALID" value="1" />
+  <parameter name="VHDL_ID" value="0" />
+ </module>
+ <module
+   name="st_source_bfm_0"
+   kind="altera_avalon_st_source_bfm"
+   version="16.0"
+   enabled="1">
+  <parameter name="ST_BEATSPERCYCLE" value="1" />
+  <parameter name="ST_CHANNEL_W" value="1" />
+  <parameter name="ST_ERROR_DESCRIPTOR" value="" />
+  <parameter name="ST_ERROR_W" value="1" />
+  <parameter name="ST_MAX_CHANNELS" value="0" />
+  <parameter name="ST_NUMSYMBOLS" value="3" />
+  <parameter name="ST_READY_LATENCY" value="1" />
+  <parameter name="ST_SYMBOL_W" value="8" />
+  <parameter name="USE_CHANNEL" value="0" />
+  <parameter name="USE_EMPTY" value="0" />
+  <parameter name="USE_ERROR" value="0" />
+  <parameter name="USE_PACKET" value="1" />
+  <parameter name="USE_READY" value="1" />
+  <parameter name="USE_VALID" value="1" />
+  <parameter name="VHDL_ID" value="0" />
+ </module>
+ <module
+   name="threshold_filter_0"
+   kind="threshold_filter"
+   version="1.0"
+   enabled="1">
+  <parameter name="BITS_PER_SYMBOL" value="8" />
+  <parameter name="SYMBOLS_PER_BEAT" value="3" />
+  <parameter name="THRESHOLD_VALUE" value="50" />
+ </module>
+ <connection
+   kind="avalon_streaming"
+   version="16.0"
+   start="threshold_filter_0.dout"
+   end="st_sink_bfm_0.sink" />
+ <connection
+   kind="avalon_streaming"
+   version="16.0"
+   start="st_source_bfm_0.src"
+   end="threshold_filter_0.din" />
+ <connection kind="clock" version="16.0" start="clk_0.clk" end="st_sink_bfm_0.clk" />
+ <connection
+   kind="clock"
+   version="16.0"
+   start="clk_0.clk"
+   end="st_source_bfm_0.clk" />
+ <connection
+   kind="clock"
+   version="16.0"
+   start="clk_0.clk"
+   end="threshold_filter_0.clock" />
+ <connection
+   kind="reset"
+   version="16.0"
+   start="clk_0.clk_reset"
+   end="st_sink_bfm_0.clk_reset" />
+ <connection
+   kind="reset"
+   version="16.0"
+   start="clk_0.clk_reset"
+   end="st_source_bfm_0.clk_reset" />
+ <connection
+   kind="reset"
+   version="16.0"
+   start="clk_0.clk_reset"
+   end="threshold_filter_0.reset" />
+ <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
+ <interconnectRequirement for="$system" name="qsys_mm.maxAdditionalLatency" value="1" />
+</system>
